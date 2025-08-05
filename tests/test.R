@@ -39,14 +39,14 @@ data_path = "/home/cgeor/src/pattern_mining/data/"
 #df = read.csv(paste0(data_path, "insurance.csv"))
 #formula = "charges ~ age + bmi + sex + region + children + smoker"
 
-df = read.csv(paste0(data_path, "housing.csv"))
-formula = "median_house_value ~ longitude + latitude + housing_median_age + total_rooms + total_bedrooms + population + households + median_income"
+#df = read.csv(paste0(data_path, "housing.csv"))
+#formula = "median_house_value ~ longitude + latitude + housing_median_age + total_rooms + total_bedrooms + population + households + median_income"
 
 #df = load.ukb("data/data_ukb_tp2_ht.rda")
 #formula = "Median_Myo ~ Age_2 + Sex_0 + BMI_2 + lv_ef_2 + is_alcoholic_2 + is_smoker_2 + is_alcoholic_2:is_smoker_2"
 
 df = drop_na(df)
-n_runs = 10
+n_runs = 5
 lm_res = numeric(n_runs)
 lm_r_res = numeric(n_runs)
 score_res = numeric(n_runs)

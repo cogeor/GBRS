@@ -9,8 +9,8 @@ fit <- function(x, y, n_iter, lr, n_quantiles, ss_rate) {
     .Call(`_RiskScore_fit`, x, y, n_iter, lr, n_quantiles, ss_rate)
 }
 
-fit_survival <- function(x, time, event, n_iter, lr, n_quantiles, ss_rate) {
-    .Call(`_RiskScore_fit_survival`, x, time, event, n_iter, lr, n_quantiles, ss_rate)
+fit_survival <- function(x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles) {
+    .Call(`_RiskScore_fit_survival`, x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles)
 }
 
 # Register entry points for exported C++ functions

@@ -1,3 +1,5 @@
+library(ascii)
+
 delete.intercept = function(mm) {
     saveattr = attributes(mm)
     intercept = which(saveattr$assign == 0)
@@ -183,7 +185,12 @@ get.score.breaks = function(scores, idx) {
     vals = vals[sorted_idxs, ]
     weights = double(nrow(vals) + 1)
     for(i in 1:(length(weights)-1)) {
-        weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
+        if (vals$w[i] > 0) {
+            weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
+        } else {
+            weights[1:i] = weights[1:i] - vals$w[i]
+            #weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
+        }
     }
     weights = sprintf(paste0("%.", prec, "f"), weights)
     sorted_vals = vals$split_val
@@ -292,16 +299,20 @@ sm <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1
 
   # Fit model based on type
   weights <- switch(objective,
-    "continuous" = fit(data$x, data$y, n_max, lr, n_quantiles, ss_rate, user_quantiles),
+    "continuous" = fit(data$x, data$y, n_max, lr, n_quantiles, ss_rate),
     "binary"     = fit_proba(data$x, data$y, n_max, lr, n_quantiles, ss_rate),
     "survival"   = fit_survival(data$x, data$time, data$event, n_max, lr, n_quantiles, ss_rate, user_quantiles),
     stop("Unknown objective: must be 'continuous', 'binary', or 'survival'")
   )
 
   weights <- prune.weights(weights)
-  obj <- list(formula = formula, data = data, weights = weights, objective = objective)
+  obj <- list(formula = formula, weights = weights, objective = objective)
   class(obj) <- "sm"
   obj
+}
+
+print.sm <- function(obj) {
+    print.model.score(obj$weights, obj$formula)
 }
 
 predict.sm <- function(obj, df) {

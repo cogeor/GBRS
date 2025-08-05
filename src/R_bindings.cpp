@@ -56,7 +56,7 @@ build_quantile_map(const MatrixXd& m,
             }
         }
     } else {
-        qts = make_quantiles(m, n_quantiles)
+        qts = make_quantiles(m, n_quantiles);
     }
 
     return qts;
@@ -76,14 +76,14 @@ DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int
 }
 
 // [[Rcpp::export]]
-DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate, Rcpp::Nullable<Rcpp::List> quantiles)
+DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate)
 {
     auto t1 = std::chrono::high_resolution_clock::now();
     MatrixXd m = as<MatrixXd>(x).transpose(); // TODO: can we avoid this copy?
     VectorXd yv = as<VectorXd>(y); // TODO: we can also avoid this copy
 
     auto t2 = std::chrono::high_resolution_clock::now();
-    const std::unordered_map<int, VectorXd> qts = build_quantile_map(m, n_quantiles, quantiles);
+    const std::unordered_map<int, VectorXd> qts = make_quantiles(m, n_quantiles);
     Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, ss_rate);
     model.fit(m, yv, qts);
 

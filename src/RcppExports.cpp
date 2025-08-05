@@ -15,12 +15,12 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // fit_proba
-Rcpp::DataFrame fit_proba(Rcpp::NumericVector x, Rcpp::NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate);
+DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate);
 static SEXP _RiskScore_fit_proba_try(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
     Rcpp::traits::input_parameter< double >::type lr(lrSEXP);
     Rcpp::traits::input_parameter< int >::type n_quantiles(n_quantilesSEXP);
@@ -54,12 +54,12 @@ RcppExport SEXP _RiskScore_fit_proba(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SE
     return rcpp_result_gen;
 }
 // fit
-Rcpp::DataFrame fit(Rcpp::NumericVector x, Rcpp::NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate);
+DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate);
 static SEXP _RiskScore_fit_try(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
     Rcpp::traits::input_parameter< double >::type lr(lrSEXP);
     Rcpp::traits::input_parameter< int >::type n_quantiles(n_quantilesSEXP);
@@ -93,26 +93,27 @@ RcppExport SEXP _RiskScore_fit(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrS
     return rcpp_result_gen;
 }
 // fit_survival
-Rcpp::DataFrame fit_survival(Rcpp::NumericMatrix x, Rcpp::NumericVector time, Rcpp::NumericVector event, int n_iter, double lr, int n_quantiles, double ss_rate);
-static SEXP _RiskScore_fit_survival_try(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
+DataFrame fit_survival(NumericMatrix x, NumericVector time, NumericVector event, int n_iter, double lr, int n_quantiles, double ss_rate, Rcpp::Nullable<Rcpp::List> quantiles);
+static SEXP _RiskScore_fit_survival_try(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP, SEXP quantilesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type time(timeSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type event(eventSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type event(eventSEXP);
     Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
     Rcpp::traits::input_parameter< double >::type lr(lrSEXP);
     Rcpp::traits::input_parameter< int >::type n_quantiles(n_quantilesSEXP);
     Rcpp::traits::input_parameter< double >::type ss_rate(ss_rateSEXP);
-    rcpp_result_gen = Rcpp::wrap(fit_survival(x, time, event, n_iter, lr, n_quantiles, ss_rate));
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type quantiles(quantilesSEXP);
+    rcpp_result_gen = Rcpp::wrap(fit_survival(x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles));
     return rcpp_result_gen;
 END_RCPP_RETURN_ERROR
 }
-RcppExport SEXP _RiskScore_fit_survival(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
+RcppExport SEXP _RiskScore_fit_survival(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP, SEXP quantilesSEXP) {
     SEXP rcpp_result_gen;
     {
         Rcpp::RNGScope rcpp_rngScope_gen;
-        rcpp_result_gen = PROTECT(_RiskScore_fit_survival_try(xSEXP, timeSEXP, eventSEXP, n_iterSEXP, lrSEXP, n_quantilesSEXP, ss_rateSEXP));
+        rcpp_result_gen = PROTECT(_RiskScore_fit_survival_try(xSEXP, timeSEXP, eventSEXP, n_iterSEXP, lrSEXP, n_quantilesSEXP, ss_rateSEXP, quantilesSEXP));
     }
     Rboolean rcpp_isInterrupt_gen = Rf_inherits(rcpp_result_gen, "interrupted-error");
     if (rcpp_isInterrupt_gen) {
@@ -137,9 +138,9 @@ RcppExport SEXP _RiskScore_fit_survival(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEX
 static int _RiskScore_RcppExport_validate(const char* sig) { 
     static std::set<std::string> signatures;
     if (signatures.empty()) {
-        signatures.insert("Rcpp::DataFrame(*fit_proba)(Rcpp::NumericVector,Rcpp::NumericVector,int,double,int,double)");
-        signatures.insert("Rcpp::DataFrame(*fit)(Rcpp::NumericVector,Rcpp::NumericVector,int,double,int,double)");
-        signatures.insert("Rcpp::DataFrame(*fit_survival)(Rcpp::NumericMatrix,Rcpp::NumericVector,Rcpp::NumericVector,int,double,int,double)");
+        signatures.insert("DataFrame(*fit_proba)(NumericVector,NumericVector,int,double,int,double)");
+        signatures.insert("DataFrame(*fit)(NumericVector,NumericVector,int,double,int,double)");
+        signatures.insert("DataFrame(*fit_survival)(NumericMatrix,NumericVector,NumericVector,int,double,int,double,Rcpp::Nullable<Rcpp::List>)");
     }
     return signatures.find(sig) != signatures.end();
 }
@@ -156,7 +157,7 @@ RcppExport SEXP _RiskScore_RcppExport_registerCCallable() {
 static const R_CallMethodDef CallEntries[] = {
     {"_RiskScore_fit_proba", (DL_FUNC) &_RiskScore_fit_proba, 6},
     {"_RiskScore_fit", (DL_FUNC) &_RiskScore_fit, 6},
-    {"_RiskScore_fit_survival", (DL_FUNC) &_RiskScore_fit_survival, 7},
+    {"_RiskScore_fit_survival", (DL_FUNC) &_RiskScore_fit_survival, 8},
     {"_RiskScore_RcppExport_registerCCallable", (DL_FUNC) &_RiskScore_RcppExport_registerCCallable, 0},
     {NULL, NULL, 0}
 };

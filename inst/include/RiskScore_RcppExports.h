@@ -25,11 +25,11 @@ namespace RiskScore {
         }
     }
 
-    inline Rcpp::DataFrame fit_proba(Rcpp::NumericVector x, Rcpp::NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate) {
+    inline DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate) {
         typedef SEXP(*Ptr_fit_proba)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
         static Ptr_fit_proba p_fit_proba = NULL;
         if (p_fit_proba == NULL) {
-            validateSignature("Rcpp::DataFrame(*fit_proba)(Rcpp::NumericVector,Rcpp::NumericVector,int,double,int,double)");
+            validateSignature("DataFrame(*fit_proba)(NumericVector,NumericVector,int,double,int,double)");
             p_fit_proba = (Ptr_fit_proba)R_GetCCallable("RiskScore", "_RiskScore_fit_proba");
         }
         RObject rcpp_result_gen;
@@ -43,14 +43,14 @@ namespace RiskScore {
             throw Rcpp::LongjumpException(rcpp_result_gen);
         if (rcpp_result_gen.inherits("try-error"))
             throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
-        return Rcpp::as<Rcpp::DataFrame >(rcpp_result_gen);
+        return Rcpp::as<DataFrame >(rcpp_result_gen);
     }
 
-    inline Rcpp::DataFrame fit(Rcpp::NumericVector x, Rcpp::NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate) {
+    inline DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate) {
         typedef SEXP(*Ptr_fit)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
         static Ptr_fit p_fit = NULL;
         if (p_fit == NULL) {
-            validateSignature("Rcpp::DataFrame(*fit)(Rcpp::NumericVector,Rcpp::NumericVector,int,double,int,double)");
+            validateSignature("DataFrame(*fit)(NumericVector,NumericVector,int,double,int,double)");
             p_fit = (Ptr_fit)R_GetCCallable("RiskScore", "_RiskScore_fit");
         }
         RObject rcpp_result_gen;
@@ -64,20 +64,20 @@ namespace RiskScore {
             throw Rcpp::LongjumpException(rcpp_result_gen);
         if (rcpp_result_gen.inherits("try-error"))
             throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
-        return Rcpp::as<Rcpp::DataFrame >(rcpp_result_gen);
+        return Rcpp::as<DataFrame >(rcpp_result_gen);
     }
 
-    inline Rcpp::DataFrame fit_survival(Rcpp::NumericMatrix x, Rcpp::NumericVector time, Rcpp::NumericVector event, int n_iter, double lr, int n_quantiles, double ss_rate) {
-        typedef SEXP(*Ptr_fit_survival)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
+    inline DataFrame fit_survival(NumericMatrix x, NumericVector time, NumericVector event, int n_iter, double lr, int n_quantiles, double ss_rate, Rcpp::Nullable<Rcpp::List> quantiles) {
+        typedef SEXP(*Ptr_fit_survival)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
         static Ptr_fit_survival p_fit_survival = NULL;
         if (p_fit_survival == NULL) {
-            validateSignature("Rcpp::DataFrame(*fit_survival)(Rcpp::NumericMatrix,Rcpp::NumericVector,Rcpp::NumericVector,int,double,int,double)");
+            validateSignature("DataFrame(*fit_survival)(NumericMatrix,NumericVector,NumericVector,int,double,int,double,Rcpp::Nullable<Rcpp::List>)");
             p_fit_survival = (Ptr_fit_survival)R_GetCCallable("RiskScore", "_RiskScore_fit_survival");
         }
         RObject rcpp_result_gen;
         {
             RNGScope RCPP_rngScope_gen;
-            rcpp_result_gen = p_fit_survival(Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(time)), Shield<SEXP>(Rcpp::wrap(event)), Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)), Shield<SEXP>(Rcpp::wrap(n_quantiles)), Shield<SEXP>(Rcpp::wrap(ss_rate)));
+            rcpp_result_gen = p_fit_survival(Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(time)), Shield<SEXP>(Rcpp::wrap(event)), Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)), Shield<SEXP>(Rcpp::wrap(n_quantiles)), Shield<SEXP>(Rcpp::wrap(ss_rate)), Shield<SEXP>(Rcpp::wrap(quantiles)));
         }
         if (rcpp_result_gen.inherits("interrupted-error"))
             throw Rcpp::internal::InterruptedException();
@@ -85,7 +85,7 @@ namespace RiskScore {
             throw Rcpp::LongjumpException(rcpp_result_gen);
         if (rcpp_result_gen.inherits("try-error"))
             throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
-        return Rcpp::as<Rcpp::DataFrame >(rcpp_result_gen);
+        return Rcpp::as<DataFrame >(rcpp_result_gen);
     }
 
 }
