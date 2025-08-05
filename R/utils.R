@@ -14,28 +14,6 @@ delete.intercept = function(mm) {
     mm
 }
 
-load.ukb = function(data_path) {
-    load(data_path)
-    df = df %>% drop_na()
-    df["event_time_CIR007"]  = df["event_time_CIR007"] - df$time_to_visit_2
-    df[df$event_time_CIR007 < 0, "hist_CIR007"] = 1
-    df = df %>% filter(hist_CIR007 == 0)
-    df["label"] = (df$event_time_CIR007 < 10 ) * df$event_CIR007
-    df["Sex_0"] = ifelse(df$Sex_0 == "Male", 1, 0)
-    df["label_status"] = df$label
-    df["label_time"] = df$event_time_CIR019
-    df
-}
-
-#process.formula = function(formula, data) {
-#
-#    frame = model.frame(terms(formula), data)
-#    resp =  model.extract(frame, "response")
-#    mat = model.matrix(terms(formula), data)
-#    mat = delete.intercept(mat)
-#    return(list("x" = mat, "y" = resp))
-#}
-
 process.formula <- function(formula, data) {
   frame <- model.frame(formula, data)
   response <- model.response(frame)
@@ -63,7 +41,7 @@ cross.entropy <- function(p, phat){
   return(-x)
 }
 
-predict.score.proba = function(model, x) {
+predict_score_proba = function(model, x) {
     yp = rep(model$cst[1], nrow(x))
     for (i in 1:nrow(model)) {
         yp = yp + ifelse(x[, model$idx[i] + 1] <= model$split_val[i], model$w[i], 0)
@@ -71,7 +49,7 @@ predict.score.proba = function(model, x) {
     exp(yp) / (1 + exp(yp))
 }
 
-predict.score = function(model, x) {
+predict_score = function(model, x) {
     yp = rep(model$cst[1], nrow(x))
     for (i in 1:nrow(model)) {
         yp = yp + ifelse(x[, model$idx[i] + 1] <= model$split_val[i], 0, model$w[i])
@@ -79,7 +57,7 @@ predict.score = function(model, x) {
     yp
 }
 
-predict.score2 = function(model, x) {
+predict_score2 = function(model, x) {
     yp = rep(0, nrow(x))
     for (i in 1:nrow(model)) {
         yp = yp + ifelse(x[, model$idx[i] + 1] <= model$split_val[i], model$w1[i], model$w2[i])
@@ -209,43 +187,12 @@ get.score.breaks = function(scores, idx) {
     list("index" = idx, "weights" = weights, "breaks" = out)
 }
 
-score.line = function(score_breaks, names) {
+score_line = function(score_breaks, names) {
     da = data.frame(breaks=c(names[score_breaks$index], score_breaks$breaks), weights=c("", score_breaks$weights))
     t(da)
 }
 
-print.model.score.old = function(scores, formula) {
-    sorted_vals = sort(scores[2,scores[1,]==2])
-    out = character(length(sorted_vals) + 1)
-    out[1] = paste0("<", sorted_vals[1])
-    for (i in 2:length(sorted_vals)) {
-        out[i] = paste0(sorted_vals[i-1], "-", sorted_vals[i])
-    }
-    out[length(sorted_vals)+1] = paste0(sorted_vals[length(sorted_vals)],"<")
-
-    a = scores[,scores[1,]==2]
-    b = order(a[2,])
-    c = a[, b]
-    d = double(ncol(c)+1)
-    for(i in 1:(length(d)-1)) {
-        d[(i+1):length(d)] = d[(i+1):length(d)] + c[3, i]
-    }
-
-    terms_obj = terms(formula)
-    independent_vars <- attr(terms_obj, "term.labels")
-    a = data.frame()
-    for (i in 1:length(independent_vars)) {
-        score_breaks = get.score.breaks(scores, i)
-        if (length(score_breaks) > 0) {
-            line = score.line(score_breaks, independent_vars)
-            print(ascii(line))
-            a = bind_rows(a, as.data.frame(line))
-        }
-    }
-    #ascii(a, include.rownames=FALSE, include.colnames=FALSE, header=FALSE)
-}
-
-print.model.score = function(scores, formula) {
+print_model_score = function(scores, formula) {
     formula = as.formula(formula)
     terms_obj = terms(formula)
     independent_vars <- attr(terms_obj, "term.labels")
@@ -254,7 +201,7 @@ print.model.score = function(scores, formula) {
         if ((i-1) %in% scores$idx){
             score_breaks = get.score.breaks(scores, i)
             if (length(score_breaks) > 0) {
-                line = score.line(score_breaks, independent_vars)
+                line = score_line(score_breaks, independent_vars)
                 output <- capture.output(print(ascii(line)))
                 cleaned <- output[2:3]
                 line_width <- max(nchar(cleaned))
@@ -272,21 +219,8 @@ print.model.score = function(scores, formula) {
     #ascii(a, include.rownames=FALSE, include.colnames=FALSE, header=FALSE)
 }
 
-#sm = function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate=1, objective = "continuous") {
-#    formula = as.formula(formula)
-#    data = process.formula(formula, df)
-#    if (objective == "continuous") {
-#        weights = fit(data$x, data$y, n_max, lr, n_quantiles, ss_rate)
-#    } else {
-#        weights = fit_proba(data$x, data$y, n_max, lr, n_quantiles, ss_rate)
-#    }
-#    weights = prune.weights(weights)
-#    obj = list(formula = formula, data = data, weights = weights, objective = objective)
-#    class(obj) = "sm"
-#    obj
-#}
-
-sm <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
+#' @export
+gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
   formula <- as.formula(formula)
   data <- process.formula(formula, df)
 
@@ -311,33 +245,26 @@ sm <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1
   obj
 }
 
-print.sm <- function(obj) {
-    print.model.score(obj$weights, obj$formula)
+#' @export
+print.gbrs <- function(obj) {
+    print_model_score(obj$weights, obj$formula)
 }
 
-predict.sm <- function(obj, df) {
+#' @export
+predict.gbrs <- function(obj, df) {
   data <- process.formula(obj$formula, df)
 
   pred <- switch(obj$objective,
-    "continuous" = predict.score(obj$weights, data$x),
-    "binary"     = predict.score.proba(obj$weights, data$x),
-    "survival"   = predict.score(obj$weights, data$x),  # Returns log-risk scores
+    "continuous" = predict_score(obj$weights, data$x),
+    "binary"     = predict_score_proba(obj$weights, data$x),
+    "survival"   = predict_score(obj$weights, data$x),  # Returns log-risk scores
     stop("Unknown objective: must be 'continuous', 'binary', or 'survival'")
   )
 
   return(pred)
 }
 
-#predict.sm = function(obj, df) {
-#    data = process.formula(obj$formula, df)
-#    if(obj$objective == "continuous") {
-#        predict.score(obj$weights, data$x)
-#    } else {
-#        predict.score.proba(obj$weights, data$x)
-#    }
-#}
-
-predict.round = function(coeffs, formula, data) {
+predict_round = function(coeffs, formula, data) {
     formula = as.formula(formula)
     frame = model.frame(terms(formula), data)
     resp =  model.extract(frame, "response")

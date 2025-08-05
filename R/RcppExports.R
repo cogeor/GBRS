@@ -2,18 +2,18 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 fit_proba <- function(x, y, n_iter, lr, n_quantiles, ss_rate) {
-    .Call(`_RiskScore_fit_proba`, x, y, n_iter, lr, n_quantiles, ss_rate)
+    .Call('_GBRS_fit_proba', PACKAGE = 'GBRS', x, y, n_iter, lr, n_quantiles, ss_rate)
 }
 
 fit <- function(x, y, n_iter, lr, n_quantiles, ss_rate) {
-    .Call(`_RiskScore_fit`, x, y, n_iter, lr, n_quantiles, ss_rate)
+    .Call('_GBRS_fit', PACKAGE = 'GBRS', x, y, n_iter, lr, n_quantiles, ss_rate)
 }
 
 fit_survival <- function(x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles) {
-    .Call(`_RiskScore_fit_survival`, x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles)
+    .Call('_GBRS_fit_survival', PACKAGE = 'GBRS', x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles)
 }
 
 # Register entry points for exported C++ functions
 methods::setLoadAction(function(ns) {
-    .Call(`_RiskScore_RcppExport_registerCCallable`)
+    .Call('_GBRS_RcppExport_registerCCallable', PACKAGE = 'GBRS')
 })
