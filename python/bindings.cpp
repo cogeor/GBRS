@@ -35,6 +35,14 @@ public:
         return model->get_params();
     }
 
+    Eigen::VectorXd get_idxs() const {
+        return model->get_idxs();
+    }
+
+    Eigen::VectorXd get_split_val() const {
+        return model->get_split_val();
+    }
+
 private:
     int n_iter;
     double lr;
@@ -43,7 +51,7 @@ private:
     std::unique_ptr<Model> model;
 };
 
-PYBIND11_MODULE(risk_score, m) {
+PYBIND11_MODULE(core, m) {
     py::class_<ScoreParams>(m, "ScoreParams")
         .def_readwrite("y0", &ScoreParams::y0)
         .def_readwrite("w", &ScoreParams::w);
@@ -58,5 +66,7 @@ PYBIND11_MODULE(risk_score, m) {
         .def("fit_proba", &PyModel::fit_proba)
         .def("predict", &PyModel::predict)
         .def("predict_proba", &PyModel::predict_proba)
-        .def("get_params", &PyModel::get_params);
+        .def("get_params", &PyModel::get_params)
+        .def("get_idxs", &PyModel::get_idxs)
+        .def("get_split_val", &PyModel::get_split_val);
 }
