@@ -24,7 +24,6 @@ custom_model = GBRS(500, 0.05, 4, 1)
 custom_model.fit(X_train, y_train)
 custom_model.print()
 preds_custom = custom_model.predict(X_test)
-#custom_model.print()
 
 linear_model = LinearRegression()
 linear_model.fit(X_train, y_train)
