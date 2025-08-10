@@ -2,7 +2,7 @@ import numpy as np
 from gbrs.core import Model
 
 class GBRS:
-    def __init__(self, n_iter=100, lr=0.1, n_quantiles=10, ss_rate=1.0):
+    def __init__(self, n_iter=300, lr=0.05, n_quantiles=5, ss_rate=1.0):
         self._model = Model(n_iter, lr, n_quantiles, ss_rate)
 
     def fit(self, X, y):

@@ -159,6 +159,9 @@ get.score.breaks = function(scores, idx) {
     if (is.null(nrow(vals))) {
         return(list("index" = idx, "breaks" = c(paste0("<", vals$split_val)), "weights"=c(sprintf(paste0("%.", prec, "f"), vals$w))))
     }
+    if (nrow(vals) == 1 && vals$split_val == 0) {
+        return(list("index" = idx, "weights" = weights, "breaks" = c("FALSE", "TRUE")))
+    }
     sorted_idxs = order(vals$split_val)
     vals = vals[sorted_idxs, ]
     weights = double(nrow(vals) + 1)
@@ -174,10 +177,6 @@ get.score.breaks = function(scores, idx) {
     sorted_vals = vals$split_val
     sorted_vals = sprintf(paste0("%.", prec, "f"), sorted_vals)
 
-    # binary case
-    if (nrow(vals) == 1 && vals$split_val == 0) {
-        return(list("index" = idx, "weights" = weights, "breaks" = c("FALSE", "TRUE")))
-    }
     out = character(length(sorted_vals) + 1)
     out[1] = paste0("<", sorted_vals[1])
     for (i in 2:length(sorted_vals)) {
@@ -241,7 +240,7 @@ gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate =
 
   weights <- prune.weights(weights)
   obj <- list(formula = formula, weights = weights, objective = objective)
-  class(obj) <- "sm"
+  class(obj) <- "gbrs"
   obj
 }
 

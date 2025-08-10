@@ -20,10 +20,10 @@ X_test = np.asarray(X_test, dtype=np.float64)
 y_test = np.asarray(y_test, dtype=np.float64)
 
 
-custom_model = GBRS(500, 0.05, 4, 1)
-custom_model.fit(X_train, y_train)
-custom_model.print()
-preds_custom = custom_model.predict(X_test)
+gbrs_model = GBRS(n_iter=500, lr=0.05, n_quantiles=4)
+gbrs_model.fit(X_train, y_train)
+gbrs_model.print()
+preds_custom = gbrs_model.predict(X_test)
 
 linear_model = LinearRegression()
 linear_model.fit(X_train, y_train)
