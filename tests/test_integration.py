@@ -1,6 +1,5 @@
 import numpy as np
-from gbrs.core import Model
-from gbrs.utils import print_model
+from gbrs import GBRS
 import sys
 
 def test_integration():
@@ -18,13 +17,13 @@ def test_integration():
 
     # Fit model
     print("Fitting model...")
-    model = Model(n_iter=10, lr=0.1, n_quantiles=10, ss_rate=0.5)
+    model = GBRS(n_iter=10, lr=0.1, n_quantiles=10, ss_rate=0.5)
     model.fit_proba(X, y)
     
     # Print formatted output
     print("\n=== Python Model Output ===")
     feature_names = {i: f"X{i+1}" for i in range(p)}
-    print_model(model, feature_names)
+    model.print(feature_names)
     
     # Verify predictions work
     preds = model.predict_proba(X)

@@ -10,16 +10,15 @@ class GBRS:
 
     def predict(self, X):
         return self._model.predict(X)
-    
-    def print(self):
-        params = self._model.get_params()
-        idxs = self._model.get_idxs()
-        split_vals = self._model.get_split_val()
-        idxs, split_vals, w = prune_weights(idxs, split_vals, params.w)
 
-        d = build_score_breaks_dict(split_vals, idxs, w, np.unique(idxs))
-        print_score_table(d)
-#        return idxs, split_vals, w
+    def fit_proba(self, X, y):
+        return self._model.fit_proba(X, y)
+
+    def predict_proba(self, X):
+        return self._model.predict_proba(X)
+    
+    def print(self, feature_names=None):
+        print_model(self._model, feature_names)
 
 def prune_weights(idx_array, split_val_array, w_array):
     merged = {}
@@ -105,7 +104,7 @@ def print_score_table(score_breaks_dict):
         if not result or not result.get("breaks"):
             continue
         
-        name = result.get("name", f"F {int(idx)}")
+        name = result.get("feature_name") or result.get("name") or f"F {int(idx)}"
 
         breaks = result["breaks"]
         weights = result["weights"]
@@ -151,3 +150,27 @@ def build_score_breaks_dict(split_val, idx, w, indices, feature_names=None):
                 score_breaks["feature_name"] = None
             result[i] = score_breaks
     return result
+
+def print_model(model, feature_names=None):
+    """
+    Print the model score table.
+    
+    Parameters:
+        model: The model object (C++ wrapper).
+        feature_names (dict, optional): Mapping from index to feature name.
+    """
+    params = model.get_params()
+    idxs = model.get_idxs()
+    split_vals = model.get_split_val()
+    
+    # Prune weights (aggregate weights with same idx and split_val)
+    idxs, split_vals, w = prune_weights(idxs, split_vals, params.w)
+    
+    if feature_names:
+        indices = sorted(feature_names.keys())
+    else:
+        indices = np.unique(idxs)
+        indices.sort()
+        
+    d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names)
+    print_score_table(d)
