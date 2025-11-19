@@ -1,6 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h> 
-#include "lib.hpp"
+#include "gbrs.hpp"
 
 namespace py = pybind11;
 
