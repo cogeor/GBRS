@@ -31,6 +31,9 @@ RUN mkdir -p third_party/eigen && \
 RUN pip3 install --no-cache-dir \
     pybind11 \
     numpy \
+    scikit-learn \
+    lifelines \
+    pandas \
     setuptools \
     wheel
 
