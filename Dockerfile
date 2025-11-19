@@ -40,11 +40,12 @@ RUN Rscript -e "install.packages(c('Rcpp', 'RcppEigen'), repos='https://cloud.r-
 # Copy source code
 COPY . .
 
+# Build and Test Python Package
+RUN pip3 install .
+RUN python3 tests/test_integration.py
+
 # Build and Test R Package
 RUN R CMD build .
 RUN R CMD INSTALL gbrs_0.0.0.9000.tar.gz
 RUN Rscript tests/test_integration.R
 
-# Build and Test Python Package
-RUN pip3 install .
-RUN python3 tests/test_integration.py

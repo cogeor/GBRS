@@ -1,5 +1,5 @@
 import numpy as np
-import gbrs
+from gbrs.core import Model
 import sys
 
 def test_integration():
@@ -17,7 +17,7 @@ def test_integration():
 
     # Fit model
     print("Fitting model...")
-    model = gbrs.Model(n_iter=10, lr=0.1, n_quantiles=10, ss_rate=0.5)
+    model = Model(n_iter=10, lr=0.1, n_quantiles=10, ss_rate=0.5)
     model.fit_proba(X, y)
     
     # Check output
