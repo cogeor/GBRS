@@ -23,7 +23,9 @@ model <- gbrs(y ~ X1 + X2 + X3 + X4 + X5, df = df, n_max = 10, lr = 0.1, n_quant
 if (!is.null(model)) {
   cat("Model fitted successfully.\n")
   cat("Model class:", class(model), "\n")
-  cat("Model weights (first few rows):\n")
+  cat("\n=== R Model Output ===\n")
+  print(model)
+  cat("\n=== Model Weights (raw) ===\n")
   print(head(model$weights))
 } else {
   stop("Model fitting failed.")

@@ -1,5 +1,6 @@
 import numpy as np
 from gbrs.core import Model
+from gbrs.utils import print_model
 import sys
 
 def test_integration():
@@ -20,18 +21,21 @@ def test_integration():
     model = Model(n_iter=10, lr=0.1, n_quantiles=10, ss_rate=0.5)
     model.fit_proba(X, y)
     
-    # Check output
-    params = model.get_params()
-    print(f"Model fitted. y0: {params.y0}")
+    # Print formatted output
+    print("\n=== Python Model Output ===")
+    feature_names = {i: f"X{i+1}" for i in range(p)}
+    print_model(model, feature_names)
     
+    # Verify predictions work
     preds = model.predict_proba(X)
-    print(f"Predictions shape: {preds.shape}")
+    print(f"\nPredictions shape: {preds.shape}")
     
     if preds.shape[0] == n:
-        print("Integration test passed!")
+        print("\n✓ Integration test passed!")
     else:
-        print("Integration test failed!")
+        print("\n✗ Integration test failed!")
         sys.exit(1)
 
 if __name__ == "__main__":
     test_integration()
+
