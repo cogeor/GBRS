@@ -18,6 +18,8 @@ ext_modules = [
 setup(
     name="gbrs",
     version="0.1",
+    author="Costa Georgantas",
+    description="GBRS (gradient boosted risk scoring) is a library that generates risk scores",
     packages=["gbrs"],   
     package_dir={"": "python"}, 
     ext_modules=ext_modules,

@@ -230,7 +230,7 @@ std::array<double, 2> gamma_survival(const VectorXd& grps, const VectorXd& gradi
 double l2_norm_mask(const VectorXd& y_p, const VectorXd& y, const VectorXd& ss_mask)
 {
     double sum = 0;
-    //Rcpp::Rcout << "a " << y_p.size() << "b "<<y.size() << "\n";  
+    //Rcout << "a " << y_p.size() << "b "<<y.size() << "\n";  
     for (size_t i = 0; i < y.size(); i++) {
         sum += (y_p[i] - y[i]) * (y_p[i] - y[i]) * ss_mask[i];
     }
@@ -468,7 +468,7 @@ std::array<double, 4> Model::get_best_split_proba(const VectorXd& u, const Vecto
         } else {
             l_arr[i] = cross_entropy_norm(new_preds, y);
         }
-        //Rprintf("l %f m %f \n", l_arr[i], mask.sum());
+        //printf("l %f m %f \n", l_arr[i], mask.sum());
     }
     out[0] = l_arr.minCoeff(&idx);
     out[1] = interp_pts[idx];
@@ -715,7 +715,7 @@ void Model::iter_survival(const Eigen::MatrixXd& x,
         );
 
         
-        //Rcpp::Rcout << "feat." << i << "loss: " << out_tmp[0] << "\n";
+        //std::cout << "feat." << i << "loss: " << out_tmp[0] << "\n";
         this->iter_out(i, 0) = out_tmp[0];  // loss
         this->iter_out(i, 1) = out_tmp[1];  // split threshold
         this->iter_out(i, 2) = out_tmp[2];  // left gamma
@@ -725,7 +725,7 @@ void Model::iter_survival(const Eigen::MatrixXd& x,
     // Select feature with lowest loss
     Eigen::Index min_idx = 0;
     this->iter_out.col(0).minCoeff(&min_idx);
-    //Rcpp::Rcout << "feat." << min_idx << "\n";
+    //std::cout << "feat." << min_idx << "\n";
 
     // Apply best split to the model
     this->add_elem(min_idx,
@@ -773,7 +773,7 @@ void Model::fit_survival(const MatrixXd& m,
                                    T,
                                    E,
                                    VectorXd::Ones(E.size())); 
-        //Rcpp::Rcout << "iter: " << i << " loss: " << loss << "\n";
+        //std::cout << "iter: " << iter << " loss: " << loss << "\n";
         this->iter_survival(m, T, E, qts, f);
                                 
         // Update prediction using the newly added tree

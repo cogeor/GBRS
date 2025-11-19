@@ -1,4 +1,4 @@
-library(ascii)
+
 
 delete.intercept = function(mm) {
     saveattr = attributes(mm)
@@ -201,21 +201,11 @@ print_model_score = function(scores, formula) {
             score_breaks = get.score.breaks(scores, i)
             if (length(score_breaks) > 0) {
                 line = score_line(score_breaks, independent_vars)
-                output <- capture.output(print(ascii(line)))
-                cleaned <- output[2:3]
-                line_width <- max(nchar(cleaned))
-                separator <- strrep("=", line_width)
-                if(i==1) {
-                    cat("", separator, "\n") # "" looks useless but isnt
-                }
-                cat(paste(cleaned, collapse = "\n"), "\n", separator, "\n")
-                #print(ascii(line), frame="none")
-                #a = bind_rows(a, as.data.frame(line))
+                print(line)
+                cat("\n")
             }
-
         }
     }
-    #ascii(a, include.rownames=FALSE, include.colnames=FALSE, header=FALSE)
 }
 
 #' @export

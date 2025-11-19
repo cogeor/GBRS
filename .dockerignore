@@ -1,0 +1,17 @@
+# Exclude Windows build artifacts
+libs/
+.venv/
+build/
+*.tar.gz
+*.so
+*.dll
+*.o
+
+# Exclude git and IDE files
+.git/
+.gitignore
+.Rproj.user/
+*.Rproj
+
+# Exclude logs
+*.log
