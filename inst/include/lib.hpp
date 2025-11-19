@@ -91,6 +91,7 @@ public:
     const ScoreParams& get_params() const;
     const VectorXd& get_idxs() const;
     const VectorXd& get_split_val() const;
+    void prune();
 };
 
 
@@ -746,6 +747,7 @@ void Model::fit_proba(const MatrixXd& m, const VectorXd& y, const std::unordered
         convert_logodds_to_p_inplace(out_model);
         //std::cout("error : %f \n", cross_entropy_norm(out_model, y));
     }
+    this->prune();
 }
 
 void Model::fit(const MatrixXd& m, const VectorXd& y, const std::unordered_map<int, VectorXd>& qts)
@@ -757,6 +759,7 @@ void Model::fit(const MatrixXd& m, const VectorXd& y, const std::unordered_map<i
         out_model = this->predict(m);
         res = y - out_model;
     }
+    this->prune();
 }
 
 void Model::fit_survival(const MatrixXd& m,
@@ -779,6 +782,7 @@ void Model::fit_survival(const MatrixXd& m,
         // Update prediction using the newly added tree
         f = this->predict(m);  // risk scores after adding the latest tree
     }
+    this->prune();
 }
 
 const ScoreParams& Model::get_params() const
@@ -823,4 +827,46 @@ VectorXd subsample_mask(int n, double subsample)
     std::shuffle(mask.begin(), mask.end(), g);
     VectorXd eig_mask = Eigen::Map<VectorXd>(mask.data(), mask.size());
     return eig_mask;
+}
+
+void Model::prune() {
+    std::map<std::pair<int, double>, std::tuple<double, double, double>> merged;
+    
+    for (int j = 0; j < this->i; j++) {
+        int idx = static_cast<int>(this->idxs[j]);
+        double sv = this->split_val[j];
+        auto key = std::make_pair(idx, sv);
+        
+        if (merged.find(key) != merged.end()) {
+            std::get<0>(merged[key]) += this->params.w[j];
+            std::get<1>(merged[key]) += this->w1[j];
+            std::get<2>(merged[key]) += this->w2[j];
+        } else {
+            merged[key] = std::make_tuple(this->params.w[j], this->w1[j], this->w2[j]);
+        }
+    }
+    
+    int new_size = merged.size();
+    VectorXd new_idxs = VectorXd::Zero(this->max_n);
+    VectorXd new_split_val = VectorXd::Zero(this->max_n);
+    VectorXd new_w = VectorXd::Zero(this->max_n);
+    VectorXd new_w1 = VectorXd::Zero(this->max_n);
+    VectorXd new_w2 = VectorXd::Zero(this->max_n);
+    
+    int idx_counter = 0;
+    for (const auto& [key, values] : merged) {
+        new_idxs[idx_counter] = key.first;
+        new_split_val[idx_counter] = key.second;
+        new_w[idx_counter] = std::get<0>(values);
+        new_w1[idx_counter] = std::get<1>(values);
+        new_w2[idx_counter] = std::get<2>(values);
+        idx_counter++;
+    }
+    
+    this->idxs = new_idxs;
+    this->split_val = new_split_val;
+    this->params.w = new_w;
+    this->w1 = new_w1;
+    this->w2 = new_w2;
+    this->i = new_size;
 }

@@ -17,6 +17,10 @@ class GBRS:
     def predict_proba(self, X):
         return self._model.predict_proba(X)
     
+    def fit_survival(self, X, time, event):
+        """Fit the model for survival analysis."""
+        return self._model.fit_survival(X, time, event)
+    
     def print(self, feature_names=None):
         print_model(self._model, feature_names)
 
