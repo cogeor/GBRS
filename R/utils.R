@@ -208,6 +208,61 @@ print_model_score = function(scores, formula) {
     }
 }
 
+#' Fit a Gradient Boosted Rule Set Model
+#'
+#' @description
+#' Fits a GBRS (Gradient Boosted Rule Set) model using gradient boosting to learn
+#' interpretable rule sets for regression, binary classification, or survival analysis.
+#' The model automatically selects split points and learns weights for each rule.
+#'
+#' @param formula A formula specifying the model. For regression and classification,
+#'   use standard R formula syntax (e.g., \code{y ~ x1 + x2}). For survival analysis,
+#'   use \code{Surv(time, event) ~ predictors} from the survival package.
+#' @param df A data frame containing the variables specified in the formula.
+#' @param n_max Integer. Maximum number of boosting iterations (default: 100).
+#'   More iterations can improve fit but may lead to overfitting.
+#' @param lr Numeric. Learning rate (shrinkage parameter) for gradient boosting
+#'   (default: 0.1). Smaller values require more iterations but can improve generalization.
+#' @param n_quantiles Integer. Number of quantile-based split point candidates to
+#'   evaluate for each feature (default: 10). Higher values increase computation time.
+#' @param ss_rate Numeric. Subsampling rate between 0 and 1 (default: 1, no subsampling).
+#'   Values less than 1 enable stochastic gradient boosting.
+#' @param objective Character. The objective function to optimize. One of:
+#'   \itemize{
+#'     \item \code{"auto"} (default): Automatically determined from response type
+#'     \item \code{"continuous"}: L2 loss for regression
+#'     \item \code{"binary"}: Log loss for binary classification
+#'     \item \code{"survival"}: Ranking loss for survival analysis
+#'   }
+#' @param user_quantiles Optional named list of user-defined quantiles for specific
+#'   features. If NULL (default), quantiles are computed automatically from the data.
+#'
+#' @return An object of class \code{"gbrs"} containing:
+#'   \item{formula}{The model formula}
+#'   \item{weights}{Data frame of learned rules with columns: idx (feature index),
+#'     split_val (threshold), w (weight), w1, w2, cst (constant)}
+#'   \item{objective}{The objective function used ("continuous", "binary", or "survival")}
+#'
+#' @examples
+#' \dontrun{
+#' # Regression example
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 50, lr = 0.1)
+#' print(model)
+#' predictions <- predict(model, mtcars)
+#'
+#' # Binary classification
+#' model_binary <- gbrs(am ~ mpg + wt + hp, data = mtcars,
+#'                      objective = "binary", n_max = 100)
+#' probs <- predict(model_binary, mtcars)
+#'
+#' # Survival analysis
+#' library(survival)
+#' model_surv <- gbrs(Surv(time, status) ~ age + sex + ph.ecog,
+#'                    data = lung, objective = "survival")
+#' risk_scores <- predict(model_surv, lung)
+#' }
+#'
+#' @seealso \code{\link{predict.gbrs}}, \code{\link{print.gbrs}}
 #' @export
 gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
   formula <- as.formula(formula)
@@ -234,11 +289,65 @@ gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate =
   obj
 }
 
+#' Print a GBRS Model
+#'
+#' @description
+#' S3 print method for GBRS models. Displays the learned rules in a human-readable
+#' format, showing feature names, split thresholds, and associated weights.
+#'
+#' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#'
+#' @return Invisibly returns the input object. Called for its side effect of
+#'   printing the model summary to the console.
+#'
+#' @examples
+#' \dontrun{
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars)
+#' print(model)  # or simply: model
+#' }
+#'
+#' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
 #' @export
 print.gbrs <- function(obj) {
     print_model_score(obj$weights, obj$formula)
 }
 
+#' Predict Method for GBRS Models
+#'
+#' @description
+#' S3 predict method for GBRS models. Generates predictions on new data using
+#' the learned rule set. The type of prediction depends on the objective used
+#' during model fitting.
+#'
+#' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param df A data frame containing the same predictor variables as used in
+#'   model fitting. Must include all variables specified in the model formula.
+#'
+#' @return A numeric vector of predictions with length equal to \code{nrow(df)}:
+#'   \itemize{
+#'     \item For \code{objective = "continuous"}: Predicted continuous values
+#'     \item For \code{objective = "binary"}: Predicted probabilities (0 to 1)
+#'     \item For \code{objective = "survival"}: Predicted log-risk scores
+#'       (higher values indicate higher risk)
+#'   }
+#'
+#' @examples
+#' \dontrun{
+#' # Fit model on training data
+#' train_idx <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
+#' train_data <- mtcars[train_idx, ]
+#' test_data <- mtcars[-train_idx, ]
+#'
+#' model <- gbrs(mpg ~ wt + hp, data = train_data)
+#'
+#' # Predict on test data
+#' predictions <- predict(model, test_data)
+#'
+#' # Calculate RMSE
+#' rmse <- sqrt(mean((predictions - test_data$mpg)^2))
+#' }
+#'
+#' @seealso \code{\link{gbrs}}, \code{\link{print.gbrs}}
 #' @export
 predict.gbrs <- function(obj, df) {
   data <- process.formula(obj$formula, df)
