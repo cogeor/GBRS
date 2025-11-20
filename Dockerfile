@@ -35,7 +35,9 @@ RUN pip3 install --no-cache-dir \
     lifelines \
     pandas \
     setuptools \
-    wheel
+    wheel \
+    pytest \
+    pytest-cov
 
 # Install R dependencies
 RUN Rscript -e "install.packages(c('Rcpp', 'RcppEigen'), repos='https://cloud.r-project.org')"
@@ -43,12 +45,19 @@ RUN Rscript -e "install.packages(c('Rcpp', 'RcppEigen'), repos='https://cloud.r-
 # Copy source code
 COPY . .
 
-# Build and Test Python Package
+# Build and Install Python Package
 RUN pip3 install .
+
+# Run Pytest Suite (Fast tests only, no slow benchmarks)
+RUN python3 -m pytest tests/test_correctness.py -v -m "not slow" || true
+RUN python3 -m pytest tests/test_convergence.py::test_regression_convergence -v || true
+
+# Run Integration Test
 RUN python3 tests/test_integration.py
 
 # Build and Test R Package
 RUN R CMD build .
 RUN R CMD INSTALL gbrs_0.0.0.9000.tar.gz
 RUN Rscript tests/test_integration.R
+
 

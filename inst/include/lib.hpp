@@ -250,17 +250,28 @@ double l2_norm(const VectorXd& y_p, const VectorXd& y)
 
 VectorXd weight_groups(const VectorXd& mask, const double w1, const double w2)
 {
-    VectorXd vec = VectorXd::Zero(mask.size());
-    vec += mask * w2;
-    vec += (VectorXd::Ones(mask.size()) - mask) * w1;
+    VectorXd vec(mask.size());
+    const int n = mask.size();
+    for (int i = 0; i < n; i++) {
+        vec[i] = (mask[i] == 0.0) ? w1 : w2;
+    }
     return vec;
 }
 
-void weight_groups_inplace(VectorXd& vec, VectorXd& mask, const double w1, const double w2)
+void weight_groups_inplace(VectorXd& vec, const VectorXd& mask, const double w1, const double w2)
 {
-    //mask += mask * w2 + (VectorXd::Ones(mask.size()) - mask) * w1;
-    vec += mask * w2;
-    vec += (VectorXd::Ones(mask.size()) - mask) * w1;
+    const int n = mask.size();
+    for (int i = 0; i < n; i++) {
+        vec[i] += (mask[i] == 0.0) ? w1 : w2;
+    }
+}
+
+void set_weighted_predictions(VectorXd& vec, const VectorXd& mask, const double w1, const double w2)
+{
+    const int n = mask.size();
+    for (int i = 0; i < n; i++) {
+        vec[i] = (mask[i] == 0.0) ? w1 : w2;
+    }
 }
 
 double cross_entropy_norm(const VectorXd& y_pred, const VectorXd& y_true)
@@ -432,12 +443,16 @@ std::array<double, 4> Model::get_best_split(const VectorXd& u, const VectorXd& y
     std::array<double, 2> g_tmp;
     std::array<double, 4> out;
     VectorXd new_preds(u.size());
+    // Thread-local variables to avoid race conditions
+    VectorXd l_arr(n_pts);
+    MatrixXd gmat(n_pts, 2);
+    
     for (int i = 0; i < n_pts; i++) {
-        mask = greater_than(u, interp_pts[i]);
+        VectorXd mask = greater_than(u, interp_pts[i]);
         g_tmp = gamma(mask, y);
         gmat(i, 0) = g_tmp[0]; 
         gmat(i, 1) = g_tmp[1]; 
-        new_preds = weight_groups(mask, lr * g_tmp[0], lr * g_tmp[1]);
+        set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
         if (ss_rate < 0) {
             l_arr[i] = l2_norm_mask(new_preds, y, this->ss_mask);
         }
@@ -459,10 +474,15 @@ std::array<double, 4> Model::get_best_split_proba(const VectorXd& u, const Vecto
     int idx = 0;
     VectorXd new_preds(u.size());
     std::array<double, 4> out;
+    // Thread-local variables to avoid race conditions
+    VectorXd l_arr(n_pts);
+    MatrixXd gmat(n_pts, 2);
+    
     for (int i = 0; i < n_pts; i++) {
-        mask = greater_than(u, interp_pts[i]);
+        VectorXd mask = greater_than(u, interp_pts[i]);
         gmat.row(i) = gamma_logodds(mask, preds, y);
-        new_preds = preds + lr * weight_groups(mask, gmat(i, 0), gmat(i, 1));
+        new_preds = preds;
+        weight_groups_inplace(new_preds, mask, lr * gmat(i, 0), lr * gmat(i, 1));
         convert_logodds_to_p_inplace(new_preds);
         if (ss_rate < 0) {
             l_arr[i] = cross_entropy_norm_mask(new_preds, y, this->ss_mask);
@@ -500,8 +520,7 @@ std::array<double, 4> Model::get_best_split_survival(
         gmat(i, 0) = g_tmp[0]; // left prediction
         gmat(i, 1) = g_tmp[1]; // right prediction
 
-        new_preds.setZero();
-        weight_groups_inplace(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
+        set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
         new_preds += f;
 
         if (ss_rate < 0) {
@@ -539,7 +558,7 @@ VectorXd Model::predict(const MatrixXd& x) const
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
         //p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-        p += weight_groups(mask, 0.0, this->params.w[s_idx]);
+        weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
     }
     return p;
 }
@@ -608,7 +627,7 @@ VectorXd Model::predict_lin_interp(const MatrixXd& x) const
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
         //p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-        p += weight_groups(mask, 0.0, this->params.w[s_idx]);
+        weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
     }
     return p;
 }
@@ -621,7 +640,7 @@ VectorXd Model::predict_proba(const MatrixXd& x) const
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
         //p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-        p += weight_groups(mask, 0, this->params.w[s_idx]);
+        weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
     }
     convert_logodds_to_p_inplace(p);
     return p;
@@ -635,7 +654,7 @@ VectorXd Model::predict_debug(const MatrixXd& x, const double y0) const
     VectorXd mask(x.cols());
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
-        p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
+        weight_groups_inplace(p, mask, this->w1[s_idx], this->w2[s_idx]);
     }
     //convert_logodds_to_p_inplace(p);
     return p;
@@ -654,12 +673,12 @@ void Model::add_elem(const int idx, const double sv, const double w1, const doub
 
 void Model::iter(const MatrixXd& x, const VectorXd& y, const std::unordered_map<int, VectorXd>& qtsw)
 {
-    std::array<double, 4> out_tmp;
     if (ss_rate < 1) {
         this->ss_mask = subsample_mask(y.size(), this->ss_rate);
     }
+    #pragma omp parallel for shared(x, y, qtsw) schedule(dynamic)
     for (int i = 0; i < x.rows(); i++) {
-        out_tmp = this->get_best_split(x.row(i), y, qtsw.at(i));
+        std::array<double, 4> out_tmp = this->get_best_split(x.row(i), y, qtsw.at(i));
         this->iter_out(i, 0) = out_tmp[0];
         this->iter_out(i, 1) = out_tmp[1];
         this->iter_out(i, 2) = out_tmp[2];
@@ -675,9 +694,9 @@ void Model::iter_proba(const MatrixXd& x, const VectorXd& preds, const VectorXd&
     if (ss_rate < 1) {
         this->ss_mask = subsample_mask(y.size(), this->ss_rate);
     }
-    std::array<double, 4> out_tmp;
+    #pragma omp parallel for shared(x, preds, y, qtsw) schedule(dynamic)
     for (int i = 0; i < x.rows(); i++) {
-        out_tmp = get_best_split_proba(x.row(i), preds, y, qtsw.at(i));
+        std::array<double, 4> out_tmp = get_best_split_proba(x.row(i), preds, y, qtsw.at(i));
         iter_out(i, 0) = out_tmp[0];
         iter_out(i, 1) = out_tmp[1];
         iter_out(i, 2) = out_tmp[2];

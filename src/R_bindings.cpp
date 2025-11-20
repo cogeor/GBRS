@@ -3,7 +3,7 @@
 #include <chrono>
 #include <Rcpp.h>
 #include <RcppEigen.h>
-#include "gbrs.hpp"
+#include "lib.hpp"
 
 using namespace Rcpp;
 
