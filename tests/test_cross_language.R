@@ -3,8 +3,7 @@
 # This script loads test data and model from Python,
 # generates predictions in R, and saves them for comparison.
 
-source("R/model_io.R")
-source("R/utils.R")
+library(gbrs)
 library(jsonlite)
 
 test_cross_language_r_part <- function() {
@@ -14,15 +13,16 @@ test_cross_language_r_part <- function() {
   
   # Load test data from Python
   cat("\n1. Loading test data from Python...\n")
-  test_data <- read_json("test_data.json")
-  X <- do.call(rbind, test_data$X)
-  y <- unlist(test_data$y)
+  test_data <- read_json("test_data.json", simplifyVector = TRUE)
+  X <- test_data$X
+  y <- test_data$y
   cat(sprintf("   Dataset: %d samples, %d features\n", nrow(X), ncol(X)))
   
   # Fit model in R with same data
   cat("\n2. Fitting model in R...\n")
   df <- data.frame(y = y, x1 = X[,1], x2 = X[,2])
-  model_r <- gbrs(y ~ x1 + x2, data = df, n_max = 10, lr = 0.1, n_quantiles = 5)
+  print(head(df))
+  model_r <- gbrs(y ~ x1 + x2, df = df, n_max = 10, lr = 0.1, n_quantiles = 5)
   cat("   ✓ Model fitted\n")
   
   # Make predictions

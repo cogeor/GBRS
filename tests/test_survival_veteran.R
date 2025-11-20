@@ -2,7 +2,7 @@ library(gbrs)
 library(survival)
 
 # Load a real survival dataset
-data(veteran, package = "survival")
+data(veteran)
 
 cat("=== Testing GBRS Survival Analysis ===\n\n")
 cat("Dataset: veteran (lung cancer survival)\n")

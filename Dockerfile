@@ -5,6 +5,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     r-base \
+    r-cran-rcpp \
+    r-cran-rcppeigen \
+    r-cran-roxygen2 \
+    r-cran-devtools \
+    r-cran-testthat \
     python3 \
     python3-pip \
     python3-dev \
@@ -13,6 +18,9 @@ RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     cmake \
+    libxml2-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Setup workspace
@@ -40,7 +48,7 @@ RUN pip3 install --no-cache-dir \
     pytest-cov
 
 # Install R dependencies
-RUN Rscript -e "install.packages(c('Rcpp', 'RcppEigen'), repos='https://cloud.r-project.org')"
+# R dependencies installed via apt-get
 
 # Copy source code
 COPY . .
@@ -57,7 +65,15 @@ RUN python3 tests/test_integration.py
 
 # Build and Test R Package
 RUN R CMD build .
-RUN R CMD INSTALL gbrs_0.0.0.9000.tar.gz
+RUN R CMD INSTALL gbrs_*.tar.gz > install.log 2>&1 || (cat install.log && exit 1)
 RUN Rscript tests/test_integration.R
+
+# Run Cross-Language Tests
+RUN python3 tests/test_cross_language.py
+RUN Rscript tests/test_cross_language.R
+
+# Run other R tests
+RUN Rscript tests/test_model_io.R
+RUN Rscript tests/test_survival_veteran.R
 
 

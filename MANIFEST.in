@@ -1,0 +1,5 @@
+include inst/include/*.hpp
+recursive-include third_party/eigen *
+include README.md
+include LICENSE
+include pyproject.toml
