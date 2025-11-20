@@ -145,7 +145,8 @@ def test_survival_breast_cancer():
     else:
         print("\n⚠ Cox model outperforms GBRS")
     
-    return c_index
+    # Assert performance is reasonable
+    assert c_index > 0.55, f"C-index {c_index:.4f} is too low (expected > 0.55)"
 
 if __name__ == "__main__":
     c_index = test_survival_breast_cancer()

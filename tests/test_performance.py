@@ -102,12 +102,12 @@ def test_classification_performance(n_samples, n_features, n_iter):
 ])
 def test_survival_performance(n_samples, n_features, n_iter):
     """Benchmark survival model performance."""
-    X, time, event = generate_survival_data(n_samples, n_features)
+    X, survival_times, event = generate_survival_data(n_samples, n_features)
     
     model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=5, ss_rate=1.0)
     
     start_time = time.time()
-    model._model.fit_survival(X, time, event)
+    model._model.fit_survival(X, survival_times, event)
     elapsed = time.time() - start_time
     
     # Verify predictions work
