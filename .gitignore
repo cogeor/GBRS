@@ -4,6 +4,5 @@
 *.so
 .vscode
 benchmarks
-tests
 data
 **__pycache__

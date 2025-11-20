@@ -1,4 +1,4 @@
 PKG_CPPFLAGS = -I../inst/include -fopenmp
 PKG_LIBS     = -fopenmp
-CXXFLAGS += -O3 -march=native -Wno-ignored-attributes -fPIC
+CXXFLAGS += -O3 -Wno-ignored-attributes -fPIC
 CFLAGS += -fPIC

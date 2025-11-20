@@ -1,21 +1,108 @@
-# Abstract
-Risk scores are an interpretable, explainable, and actionable class of machine learning models used in clinical settings, insurance, and risk management. Unlike most computational methods, risk scores are designed to be computed by a human by attributing points to a data sample based on a limited set of criteria. The most common approaches for generating risk scores use linear regressions to estimate the effect of selected variables. In this work, we take a principled approach towards building robust risk scores. We provide an algorithm based on gradient boosting that is capable of modeling nonlinear effects, along with a C++ implementation with Python and R bindings. We show that our method consistently performs well compared to other prediction models through extensive empirical evaluation on multiple tabular datasets in regression, classification tasks, and time-to-event tasks. Finally, we show that our approach yields scores that are significantly more compact than those of regression-based alternatives.
+# GBRS: Gradient Boosted Risk Scoring
 
-# Installation
-Python: pip install .
-R: R CMD INSTALL .
+Risk scores are an interpretable, explainable, and actionable class of machine learning models used in clinical settings, insurance, and risk management. Unlike most computational methods, risk scores are designed to be computed by a human by attributing points to a data sample based on a limited set of criteria.
 
-# Python Usage Example
+This library provides an algorithm based on gradient boosting that is capable of modeling nonlinear effects, along with a C++ implementation with Python and R bindings.
+
+## Installation
+
+### Prerequisites
+- **C++ Compiler**: GCC/Clang (Linux/macOS) or MSVC (Windows).
+- **Python**: 3.7+
+- **R**: 4.0+ (for R package)
+- **Eigen**: Included as a git submodule.
+
+### Python Package
+
+1.  Clone the repository with submodules:
+    ```bash
+    git clone --recursive https://gitlab.com/cgeo/GBRS.git
+    cd GBRS
+    ```
+    If you already cloned without `--recursive`, run:
+    ```bash
+    git submodule update --init --recursive
+    ```
+
+2.  Install using pip:
+    ```bash
+    pip install .
+    ```
+
+### R Package
+
+1.  Install dependencies (`Rcpp`, `RcppEigen`):
+    ```R
+    install.packages(c("Rcpp", "RcppEigen"))
+    ```
+
+2.  Install from source:
+    ```bash
+    R CMD INSTALL .
+    ```
+
+## Usage
+
+### Python
+
+The Python API provides a scikit-learn style interface.
+
+```python
+import numpy as np
 from gbrs import GBRS
 
-gbrs_model = GBRS(n_iter=500, lr=0.05, n_quantiles=4)
-gbrs_model.fit(X_train, y_train) # fit_proba for binary classification
-preds_custom = gbrs_model.predict(X_test)
-gbrs_model.print()
+# Generate synthetic data
+X_train = np.random.rand(100, 5)
+y_train = (X_train[:, 0] + X_train[:, 1] > 1).astype(float)
 
-# R Usage Example
+# Initialize and fit model
+# n_iter: Number of boosting iterations
+# lr: Learning rate
+# n_quantiles: Number of bins for feature discretization
+model = GBRS(n_iter=300, lr=0.05, n_quantiles=5)
+
+# For regression (continuous target)
+# model.fit(X_train, y_train)
+
+# For binary classification (probability)
+model.fit_proba(X_train, y_train)
+
+# Predict
+preds = model.predict_proba(X_train)
+
+# Print the interpretable score table
+# You can provide feature names for better readability
+feature_names = {i: f"Feature_{i}" for i in range(X_train.shape[1])}
+model.print(feature_names)
+```
+
+### R
+
+The R API provides a formula-based interface and supports survival analysis.
+
+```R
 library(gbrs)
-gbrs_model <- gbrs(formula, train_val_set, objective = "survival", 
-                  n_max = 500, lr = 0.05, n_quantiles = 5)
-pred_score <- predict(gbrs_model, test_set)
-print(gbrs_model)
+
+# Standard regression/classification
+model <- gbrs(y ~ x1 + x2, data = df, objective = "binary", 
+              n_max = 300, lr = 0.05, n_quantiles = 5)
+
+# Survival analysis
+# Requires 'time' and 'status' columns in the response
+surv_model <- gbrs(Surv(time, status) ~ ., data = survival_df, objective = "survival",
+                   n_max = 300, lr = 0.05, n_quantiles = 5)
+
+# Predict
+preds <- predict(model, test_df)
+
+# Print score table
+print(model)
+```
+
+## Features
+
+- **Non-linear effects**: Captures complex relationships through gradient boosting.
+- **Interpretability**: Produces a simple points-based score card.
+- **Multi-objective**: Supports regression, binary classification, and survival analysis (R only).
+- **Cross-platform**: Works on Linux, macOS, and Windows.
+

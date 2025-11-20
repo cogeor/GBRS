@@ -147,10 +147,10 @@ static int _GBRS_RcppExport_validate(const char* sig) {
 
 // registerCCallable (register entry points for exported C++ functions)
 RcppExport SEXP _GBRS_RcppExport_registerCCallable() { 
-    R_RegisterCCallable("GBRS", "_GBRS_fit_proba", (DL_FUNC)_GBRS_fit_proba_try);
-    R_RegisterCCallable("GBRS", "_GBRS_fit", (DL_FUNC)_GBRS_fit_try);
-    R_RegisterCCallable("GBRS", "_GBRS_fit_survival", (DL_FUNC)_GBRS_fit_survival_try);
-    R_RegisterCCallable("GBRS", "_GBRS_RcppExport_validate", (DL_FUNC)_GBRS_RcppExport_validate);
+    R_RegisterCCallable("gbrs", "_GBRS_fit_proba", (DL_FUNC)_GBRS_fit_proba_try);
+    R_RegisterCCallable("gbrs", "_GBRS_fit", (DL_FUNC)_GBRS_fit_try);
+    R_RegisterCCallable("gbrs", "_GBRS_fit_survival", (DL_FUNC)_GBRS_fit_survival_try);
+    R_RegisterCCallable("gbrs", "_GBRS_RcppExport_validate", (DL_FUNC)_GBRS_RcppExport_validate);
     return R_NilValue;
 }
 
@@ -162,7 +162,7 @@ static const R_CallMethodDef CallEntries[] = {
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_GBRS(DllInfo *dll) {
+RcppExport void R_init_gbrs(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
