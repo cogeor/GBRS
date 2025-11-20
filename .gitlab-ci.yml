@@ -1,0 +1,7 @@
+test:
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t gbrs .
+    - docker run gbrs python3 -m pytest tests/ -v

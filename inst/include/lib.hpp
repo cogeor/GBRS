@@ -91,6 +91,7 @@ public:
     const ScoreParams& get_params() const;
     const VectorXd& get_idxs() const;
     const VectorXd& get_split_val() const;
+    void prune();
 };
 
 
@@ -230,7 +231,7 @@ std::array<double, 2> gamma_survival(const VectorXd& grps, const VectorXd& gradi
 double l2_norm_mask(const VectorXd& y_p, const VectorXd& y, const VectorXd& ss_mask)
 {
     double sum = 0;
-    //Rcpp::Rcout << "a " << y_p.size() << "b "<<y.size() << "\n";  
+    //Rcout << "a " << y_p.size() << "b "<<y.size() << "\n";  
     for (size_t i = 0; i < y.size(); i++) {
         sum += (y_p[i] - y[i]) * (y_p[i] - y[i]) * ss_mask[i];
     }
@@ -249,17 +250,28 @@ double l2_norm(const VectorXd& y_p, const VectorXd& y)
 
 VectorXd weight_groups(const VectorXd& mask, const double w1, const double w2)
 {
-    VectorXd vec = VectorXd::Zero(mask.size());
-    vec += mask * w2;
-    vec += (VectorXd::Ones(mask.size()) - mask) * w1;
+    VectorXd vec(mask.size());
+    const int n = mask.size();
+    for (int i = 0; i < n; i++) {
+        vec[i] = (mask[i] == 0.0) ? w1 : w2;
+    }
     return vec;
 }
 
-void weight_groups_inplace(VectorXd& vec, VectorXd& mask, const double w1, const double w2)
+void weight_groups_inplace(VectorXd& vec, const VectorXd& mask, const double w1, const double w2)
 {
-    //mask += mask * w2 + (VectorXd::Ones(mask.size()) - mask) * w1;
-    vec += mask * w2;
-    vec += (VectorXd::Ones(mask.size()) - mask) * w1;
+    const int n = mask.size();
+    for (int i = 0; i < n; i++) {
+        vec[i] += (mask[i] == 0.0) ? w1 : w2;
+    }
+}
+
+void set_weighted_predictions(VectorXd& vec, const VectorXd& mask, const double w1, const double w2)
+{
+    const int n = mask.size();
+    for (int i = 0; i < n; i++) {
+        vec[i] = (mask[i] == 0.0) ? w1 : w2;
+    }
 }
 
 double cross_entropy_norm(const VectorXd& y_pred, const VectorXd& y_true)
@@ -431,12 +443,16 @@ std::array<double, 4> Model::get_best_split(const VectorXd& u, const VectorXd& y
     std::array<double, 2> g_tmp;
     std::array<double, 4> out;
     VectorXd new_preds(u.size());
+    // Thread-local variables to avoid race conditions
+    VectorXd l_arr(n_pts);
+    MatrixXd gmat(n_pts, 2);
+    
     for (int i = 0; i < n_pts; i++) {
-        mask = greater_than(u, interp_pts[i]);
+        VectorXd mask = greater_than(u, interp_pts[i]);
         g_tmp = gamma(mask, y);
         gmat(i, 0) = g_tmp[0]; 
         gmat(i, 1) = g_tmp[1]; 
-        new_preds = weight_groups(mask, lr * g_tmp[0], lr * g_tmp[1]);
+        set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
         if (ss_rate < 0) {
             l_arr[i] = l2_norm_mask(new_preds, y, this->ss_mask);
         }
@@ -458,17 +474,22 @@ std::array<double, 4> Model::get_best_split_proba(const VectorXd& u, const Vecto
     int idx = 0;
     VectorXd new_preds(u.size());
     std::array<double, 4> out;
+    // Thread-local variables to avoid race conditions
+    VectorXd l_arr(n_pts);
+    MatrixXd gmat(n_pts, 2);
+    
     for (int i = 0; i < n_pts; i++) {
-        mask = greater_than(u, interp_pts[i]);
+        VectorXd mask = greater_than(u, interp_pts[i]);
         gmat.row(i) = gamma_logodds(mask, preds, y);
-        new_preds = preds + lr * weight_groups(mask, gmat(i, 0), gmat(i, 1));
+        new_preds = preds;
+        weight_groups_inplace(new_preds, mask, lr * gmat(i, 0), lr * gmat(i, 1));
         convert_logodds_to_p_inplace(new_preds);
         if (ss_rate < 0) {
             l_arr[i] = cross_entropy_norm_mask(new_preds, y, this->ss_mask);
         } else {
             l_arr[i] = cross_entropy_norm(new_preds, y);
         }
-        //Rprintf("l %f m %f \n", l_arr[i], mask.sum());
+        //printf("l %f m %f \n", l_arr[i], mask.sum());
     }
     out[0] = l_arr.minCoeff(&idx);
     out[1] = interp_pts[idx];
@@ -499,8 +520,7 @@ std::array<double, 4> Model::get_best_split_survival(
         gmat(i, 0) = g_tmp[0]; // left prediction
         gmat(i, 1) = g_tmp[1]; // right prediction
 
-        new_preds.setZero();
-        weight_groups_inplace(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
+        set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
         new_preds += f;
 
         if (ss_rate < 0) {
@@ -538,7 +558,7 @@ VectorXd Model::predict(const MatrixXd& x) const
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
         //p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-        p += weight_groups(mask, 0.0, this->params.w[s_idx]);
+        weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
     }
     return p;
 }
@@ -607,7 +627,7 @@ VectorXd Model::predict_lin_interp(const MatrixXd& x) const
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
         //p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-        p += weight_groups(mask, 0.0, this->params.w[s_idx]);
+        weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
     }
     return p;
 }
@@ -620,7 +640,7 @@ VectorXd Model::predict_proba(const MatrixXd& x) const
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
         //p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-        p += weight_groups(mask, 0, this->params.w[s_idx]);
+        weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
     }
     convert_logodds_to_p_inplace(p);
     return p;
@@ -634,7 +654,7 @@ VectorXd Model::predict_debug(const MatrixXd& x, const double y0) const
     VectorXd mask(x.cols());
     for (int s_idx = 0; s_idx < this->i; s_idx++) {
         mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
-        p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
+        weight_groups_inplace(p, mask, this->w1[s_idx], this->w2[s_idx]);
     }
     //convert_logodds_to_p_inplace(p);
     return p;
@@ -653,12 +673,12 @@ void Model::add_elem(const int idx, const double sv, const double w1, const doub
 
 void Model::iter(const MatrixXd& x, const VectorXd& y, const std::unordered_map<int, VectorXd>& qtsw)
 {
-    std::array<double, 4> out_tmp;
     if (ss_rate < 1) {
         this->ss_mask = subsample_mask(y.size(), this->ss_rate);
     }
+    #pragma omp parallel for shared(x, y, qtsw) schedule(dynamic)
     for (int i = 0; i < x.rows(); i++) {
-        out_tmp = this->get_best_split(x.row(i), y, qtsw.at(i));
+        std::array<double, 4> out_tmp = this->get_best_split(x.row(i), y, qtsw.at(i));
         this->iter_out(i, 0) = out_tmp[0];
         this->iter_out(i, 1) = out_tmp[1];
         this->iter_out(i, 2) = out_tmp[2];
@@ -674,9 +694,9 @@ void Model::iter_proba(const MatrixXd& x, const VectorXd& preds, const VectorXd&
     if (ss_rate < 1) {
         this->ss_mask = subsample_mask(y.size(), this->ss_rate);
     }
-    std::array<double, 4> out_tmp;
+    #pragma omp parallel for shared(x, preds, y, qtsw) schedule(dynamic)
     for (int i = 0; i < x.rows(); i++) {
-        out_tmp = get_best_split_proba(x.row(i), preds, y, qtsw.at(i));
+        std::array<double, 4> out_tmp = get_best_split_proba(x.row(i), preds, y, qtsw.at(i));
         iter_out(i, 0) = out_tmp[0];
         iter_out(i, 1) = out_tmp[1];
         iter_out(i, 2) = out_tmp[2];
@@ -715,7 +735,7 @@ void Model::iter_survival(const Eigen::MatrixXd& x,
         );
 
         
-        //Rcpp::Rcout << "feat." << i << "loss: " << out_tmp[0] << "\n";
+        //std::cout << "feat." << i << "loss: " << out_tmp[0] << "\n";
         this->iter_out(i, 0) = out_tmp[0];  // loss
         this->iter_out(i, 1) = out_tmp[1];  // split threshold
         this->iter_out(i, 2) = out_tmp[2];  // left gamma
@@ -725,7 +745,7 @@ void Model::iter_survival(const Eigen::MatrixXd& x,
     // Select feature with lowest loss
     Eigen::Index min_idx = 0;
     this->iter_out.col(0).minCoeff(&min_idx);
-    //Rcpp::Rcout << "feat." << min_idx << "\n";
+    //std::cout << "feat." << min_idx << "\n";
 
     // Apply best split to the model
     this->add_elem(min_idx,
@@ -746,6 +766,7 @@ void Model::fit_proba(const MatrixXd& m, const VectorXd& y, const std::unordered
         convert_logodds_to_p_inplace(out_model);
         //std::cout("error : %f \n", cross_entropy_norm(out_model, y));
     }
+    this->prune();
 }
 
 void Model::fit(const MatrixXd& m, const VectorXd& y, const std::unordered_map<int, VectorXd>& qts)
@@ -757,6 +778,7 @@ void Model::fit(const MatrixXd& m, const VectorXd& y, const std::unordered_map<i
         out_model = this->predict(m);
         res = y - out_model;
     }
+    this->prune();
 }
 
 void Model::fit_survival(const MatrixXd& m,
@@ -773,12 +795,13 @@ void Model::fit_survival(const MatrixXd& m,
                                    T,
                                    E,
                                    VectorXd::Ones(E.size())); 
-        //Rcpp::Rcout << "iter: " << i << " loss: " << loss << "\n";
+        //std::cout << "iter: " << iter << " loss: " << loss << "\n";
         this->iter_survival(m, T, E, qts, f);
                                 
         // Update prediction using the newly added tree
         f = this->predict(m);  // risk scores after adding the latest tree
     }
+    this->prune();
 }
 
 const ScoreParams& Model::get_params() const
@@ -823,4 +846,46 @@ VectorXd subsample_mask(int n, double subsample)
     std::shuffle(mask.begin(), mask.end(), g);
     VectorXd eig_mask = Eigen::Map<VectorXd>(mask.data(), mask.size());
     return eig_mask;
+}
+
+void Model::prune() {
+    std::map<std::pair<int, double>, std::tuple<double, double, double>> merged;
+    
+    for (int j = 0; j < this->i; j++) {
+        int idx = static_cast<int>(this->idxs[j]);
+        double sv = this->split_val[j];
+        auto key = std::make_pair(idx, sv);
+        
+        if (merged.find(key) != merged.end()) {
+            std::get<0>(merged[key]) += this->params.w[j];
+            std::get<1>(merged[key]) += this->w1[j];
+            std::get<2>(merged[key]) += this->w2[j];
+        } else {
+            merged[key] = std::make_tuple(this->params.w[j], this->w1[j], this->w2[j]);
+        }
+    }
+    
+    int new_size = merged.size();
+    VectorXd new_idxs = VectorXd::Zero(this->max_n);
+    VectorXd new_split_val = VectorXd::Zero(this->max_n);
+    VectorXd new_w = VectorXd::Zero(this->max_n);
+    VectorXd new_w1 = VectorXd::Zero(this->max_n);
+    VectorXd new_w2 = VectorXd::Zero(this->max_n);
+    
+    int idx_counter = 0;
+    for (const auto& [key, values] : merged) {
+        new_idxs[idx_counter] = key.first;
+        new_split_val[idx_counter] = key.second;
+        new_w[idx_counter] = std::get<0>(values);
+        new_w1[idx_counter] = std::get<1>(values);
+        new_w2[idx_counter] = std::get<2>(values);
+        idx_counter++;
+    }
+    
+    this->idxs = new_idxs;
+    this->split_val = new_split_val;
+    this->params.w = new_w;
+    this->w1 = new_w1;
+    this->w2 = new_w2;
+    this->i = new_size;
 }

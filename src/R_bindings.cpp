@@ -90,7 +90,7 @@ DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_qua
     auto t3 = std::chrono::high_resolution_clock::now();
     auto dur1 = std::chrono::duration_cast<std::chrono::milliseconds> (t3 - t1);
     auto dur2 = std::chrono::duration_cast<std::chrono::milliseconds> (t3 - t2);
-    Rcout << "t1 : " << dur1.count() << "  t2 : " << dur2.count() << "\n";
+    //Rcout << "t1 : " << dur1.count() << "  t2 : " << dur2.count() << "\n";
     return export_score(model);
 }
 
@@ -125,8 +125,8 @@ DataFrame fit_survival(NumericMatrix x,
     // Timing output
     const auto total_duration = duration_cast<milliseconds>(end_fit - start_total).count();
     const auto fit_duration = duration_cast<milliseconds>(end_fit - start_fit).count();
-    Rcpp::Rcout << "Total time: " << total_duration << " ms, "
-                << "Fit time: " << fit_duration << " ms\n";
+    //Rcpp::Rcout << "Total time: " << total_duration << " ms, "
+    //            << "Fit time: " << fit_duration << " ms\n";
 
     // Export model state to R
     return export_score(model);

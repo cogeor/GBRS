@@ -23,6 +23,12 @@ public:
         model->fit_proba(X.transpose(), y, qts);
     }
 
+    void fit_survival(const Eigen::MatrixXd& X, const Eigen::VectorXd& time, const Eigen::VectorXd& event) {
+        auto qts = make_quantiles(X.transpose(), n_quantiles);
+        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, ss_rate);
+        model->fit_survival(X.transpose(), time, event, qts);
+    }
+
     Eigen::VectorXd predict(const Eigen::MatrixXd& X) const {
         return model->predict(X.transpose());
     }
@@ -64,6 +70,7 @@ PYBIND11_MODULE(core, m) {
              py::arg("ss_rate"))
         .def("fit", &PyModel::fit)
         .def("fit_proba", &PyModel::fit_proba)
+        .def("fit_survival", &PyModel::fit_survival)
         .def("predict", &PyModel::predict)
         .def("predict_proba", &PyModel::predict_proba)
         .def("get_params", &PyModel::get_params)
