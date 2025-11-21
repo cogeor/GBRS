@@ -1,5 +1,4 @@
 
-
 delete.intercept = function(mm) {
     saveattr = attributes(mm)
     intercept = which(saveattr$assign == 0)
@@ -150,64 +149,6 @@ convert.weights.score = function(w) {
     list("score"=score_mat, "cst"=cst)
 }
 
-get.score.breaks = function(scores, idx) {
-    prec=1
-    vals = scores[scores$idx==idx-1, ] 
-    if (length(vals) == 0) {
-        return(list()) 
-    }
-    if (is.null(nrow(vals))) {
-        return(list("index" = idx, "breaks" = c(paste0("<", vals$split_val)), "weights"=c(sprintf(paste0("%.", prec, "f"), vals$w))))
-    }
-    if (nrow(vals) == 1 && vals$split_val == 0) {
-        return(list("index" = idx, "weights" = weights, "breaks" = c("FALSE", "TRUE")))
-    }
-    sorted_idxs = order(vals$split_val)
-    vals = vals[sorted_idxs, ]
-    weights = double(nrow(vals) + 1)
-    for(i in 1:(length(weights)-1)) {
-        if (vals$w[i] > 0) {
-            weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
-        } else {
-            weights[1:i] = weights[1:i] - vals$w[i]
-            #weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
-        }
-    }
-    weights = sprintf(paste0("%.", prec, "f"), weights)
-    sorted_vals = vals$split_val
-    sorted_vals = sprintf(paste0("%.", prec, "f"), sorted_vals)
-
-    out = character(length(sorted_vals) + 1)
-    out[1] = paste0("<", sorted_vals[1])
-    for (i in 2:length(sorted_vals)) {
-        out[i] = paste0("[", sorted_vals[i-1], ",", sorted_vals[i], ")")
-    }
-    out[length(sorted_vals)+1] = paste0(">=", sorted_vals[length(sorted_vals)])
-    list("index" = idx, "weights" = weights, "breaks" = out)
-}
-
-score_line = function(score_breaks, names) {
-    da = data.frame(breaks=c(names[score_breaks$index], score_breaks$breaks), weights=c("", score_breaks$weights))
-    t(da)
-}
-
-print_model_score = function(scores, formula) {
-    formula = as.formula(formula)
-    terms_obj = terms(formula)
-    independent_vars <- attr(terms_obj, "term.labels")
-    a = data.frame()
-    for (i in 1:length(independent_vars)) {
-        if ((i-1) %in% scores$idx){
-            score_breaks = get.score.breaks(scores, i)
-            if (length(score_breaks) > 0) {
-                line = score_line(score_breaks, independent_vars)
-                print(line)
-                cat("\n")
-            }
-        }
-    }
-}
-
 #' Fit a Gradient Boosted Rule Set Model
 #'
 #' @description
@@ -287,27 +228,6 @@ gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate
   obj
 }
 
-#' Print a GBRS Model
-#'
-#' @description
-#' S3 print method for GBRS models. Displays the learned rules in a human-readable
-#' format, showing feature names, split thresholds, and associated weights.
-#'
-#' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
-#'
-#' @return Invisibly returns the input object. Called for its side effect of
-#'   printing the model summary to the console.
-#'
-#' @examples
-#' model <- gbrs(mpg ~ wt + hp, data = mtcars)
-#' print(model)  # or simply: model
-#'
-#' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
-#' @export
-print.gbrs <- function(obj) {
-    print_model_score(obj$weights, obj$formula)
-}
-
 #' Predict Method for GBRS Models
 #'
 #' @description
@@ -365,4 +285,3 @@ predict_round = function(coeffs, formula, data) {
     yp_r = mat %*% r_coeffs # yp == yp_lm
     yp_r
 }
-

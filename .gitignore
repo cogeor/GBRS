@@ -1,6 +1,7 @@
 /dev
 /build
 /dist
+/scripts
 *.egg-info
 *.so
 *.tar.gz
