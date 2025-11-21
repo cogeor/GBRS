@@ -49,6 +49,13 @@ public:
         return model->get_split_val();
     }
 
+    void set_params(const Eigen::VectorXd& idxs, const Eigen::VectorXd& split_val, const Eigen::VectorXd& w, double y0) {
+        if (!model) {
+             model = std::make_unique<Model>(0, 0, idxs.size(), 0.0, 0, 0.0);
+        }
+        model->set_params(idxs, split_val, w, y0);
+    }
+
 private:
     int n_iter;
     double lr;
@@ -75,5 +82,6 @@ PYBIND11_MODULE(core, m) {
         .def("predict_proba", &PyModel::predict_proba)
         .def("get_params", &PyModel::get_params)
         .def("get_idxs", &PyModel::get_idxs)
-        .def("get_split_val", &PyModel::get_split_val);
+        .def("get_split_val", &PyModel::get_split_val)
+        .def("set_params", &PyModel::set_params);
 }

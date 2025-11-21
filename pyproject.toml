@@ -14,7 +14,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Costa Georgantas", email = "costa@example.com"}
+    {name = "Costa Georgantas", email = "costa.georgantas@chuv.ch"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -29,9 +29,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/costa/gbrs"
-Repository = "https://github.com/costa/gbrs"
-Issues = "https://github.com/costa/gbrs/issues"
+Homepage = "https://gitlab.com/cgeo/GBRS"
+Repository = "https://gitlab.com/cgeo/GBRS"
+Issues = "https://gitlab.com/cgeo/GBRS/-/issues"
 
 [project.optional-dependencies]
 test = [

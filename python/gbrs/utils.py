@@ -24,6 +24,66 @@ class GBRS:
     def print(self, feature_names=None):
         print_model(self._model, feature_names)
 
+    def save_model(self, filepath):
+        """
+        Save the model to a JSON file.
+        
+        Parameters
+        ----------
+        filepath : str
+            Path to save the model file
+        """
+        from gbrs.model_io import save_model as _save_model
+        _save_model(self, filepath)
+
+    @classmethod
+    def load_model(cls, filepath):
+        """
+        Load a model from a JSON file.
+        
+        Parameters
+        ----------
+        filepath : str
+            Path to the model file
+            
+        Returns
+        -------
+        GBRS
+            Loaded model instance
+        """
+        from gbrs.model_io import load_model as _load_model
+        return _load_model(filepath)
+
+    def _set_state(self, state_dict):
+        """
+        Set model state from a dictionary.
+        
+        Parameters
+        ----------
+        state_dict : dict
+            Dictionary containing model parameters
+        """
+        rules = state_dict["rules"]
+        
+        idxs = []
+        split_vals = []
+        w = []
+        y0 = 0.0
+        
+        for i, rule in enumerate(rules):
+            idxs.append(rule["idx"])
+            split_vals.append(rule["split_val"])
+            w.append(rule["w"])
+            if i == 0:
+                y0 = rule.get("cst", 0.0)
+        
+        import numpy as np
+        idxs_arr = np.array(idxs, dtype=np.float64)
+        split_vals_arr = np.array(split_vals, dtype=np.float64)
+        w_arr = np.array(w, dtype=np.float64)
+        
+        self._model.set_params(idxs_arr, split_vals_arr, w_arr, float(y0))
+
 def prune_weights(idx_array, split_val_array, w_array):
     merged = {}
 
@@ -130,6 +190,7 @@ def print_score_table(score_breaks_dict):
         print(weights_row + "|")
 
         print("=" * total_width)
+
 def build_score_breaks_dict(split_val, idx, w, indices, feature_names=None):
     """
     Build a dict mapping each index to its score breaks dict.

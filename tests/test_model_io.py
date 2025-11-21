@@ -17,13 +17,20 @@ def test_python_save_load():
     model = GBRS(n_iter=10, lr=0.1, n_quantiles=5)
     model.fit(X, y)
     
-    # Save model
-    save_model(model._model, 'test_model_python.json', objective='continuous', formula='y ~ x1 + x2 + x3')
+    # Save model using method
+    model.save_model('test_model_python.json')
     print("✓ Model saved to test_model_python.json")
     
-    # Load model
-    loaded_data = load_model('test_model_python.json')
-    print(f"✓ Model loaded: {len(loaded_data['rules'])} rules")
+    # Load model using class method
+    loaded_model = GBRS.load_model('test_model_python.json')
+    print(f"✓ Model loaded")
+    
+    # Verify loaded model predictions match original
+    loaded_preds = loaded_model.predict(X)
+    original_preds = model.predict(X)
+    
+    assert np.allclose(original_preds, loaded_preds), "Loaded model predictions don't match original!"
+    print("✓ Loaded model predictions match original!")
     
     # Make predictions and save them
     predictions = model.predict(X)
@@ -31,11 +38,11 @@ def test_python_save_load():
     print(f"✓ Predictions saved: {len(predictions)} values")
     
     # Load predictions
-    loaded_preds = load_predictions('predictions_python.json')
-    print(f"✓ Predictions loaded: {len(loaded_preds)} values")
+    loaded_preds_json = load_predictions('predictions_python.json')
+    print(f"✓ Predictions loaded: {len(loaded_preds_json)} values")
     
     # Verify predictions match
-    assert np.allclose(predictions, loaded_preds), "Predictions don't match!"
+    assert np.allclose(predictions, loaded_preds_json), "Predictions don't match!"
     print("✓ Predictions match!")
     
     print("\n✅ All Python save/load tests passed!\n")
