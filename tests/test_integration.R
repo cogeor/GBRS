@@ -17,7 +17,7 @@ df <- as.data.frame(cbind(y = y, X))
 
 # Fit model using formula interface
 cat("Fitting model...\n")
-model <- gbrs(y ~ X1 + X2 + X3 + X4 + X5, df = df, n_max = 10, lr = 0.1, n_quantiles = 10, ss_rate = 0.5, objective = "binary")
+model <- gbrs(y ~ X1 + X2 + X3 + X4 + X5, data = df, n_max = 10, lr = 0.1, n_quantiles = 10, ss_rate = 0.5, objective = "binary")
 
 # Check output
 if (!is.null(model)) {

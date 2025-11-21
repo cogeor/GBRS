@@ -22,7 +22,7 @@ test_cross_language_r_part <- function() {
   cat("\n2. Fitting model in R...\n")
   df <- data.frame(y = y, x1 = X[,1], x2 = X[,2])
   print(head(df))
-  model_r <- gbrs(y ~ x1 + x2, df = df, n_max = 10, lr = 0.1, n_quantiles = 5)
+  model_r <- gbrs(y ~ x1 + x2, data = df, n_max = 10, lr = 0.1, n_quantiles = 5)
   cat("   ✓ Model fitted\n")
   
   # Make predictions

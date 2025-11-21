@@ -9,7 +9,7 @@ test_r_save_load <- function() {
   set.seed(42)
   
   # Fit model
-  model <- gbrs(mpg ~ wt + hp, df = mtcars, n_max = 10, lr = 0.1)
+  model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, lr = 0.1)
   cat("✓ Model fitted\n")
   
   # Save model

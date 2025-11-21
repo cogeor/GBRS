@@ -218,7 +218,7 @@ print_model_score = function(scores, formula) {
 #' @param formula A formula specifying the model. For regression and classification,
 #'   use standard R formula syntax (e.g., \code{y ~ x1 + x2}). For survival analysis,
 #'   use \code{Surv(time, event) ~ predictors} from the survival package.
-#' @param df A data frame containing the variables specified in the formula.
+#' @param data A data frame containing the variables specified in the formula.
 #' @param n_max Integer. Maximum number of boosting iterations (default: 100).
 #'   More iterations can improve fit but may lead to overfitting.
 #' @param lr Numeric. Learning rate (shrinkage parameter) for gradient boosting
@@ -244,7 +244,6 @@ print_model_score = function(scores, formula) {
 #'   \item{objective}{The objective function used ("continuous", "binary", or "survival")}
 #'
 #' @examples
-#' \dontrun{
 #' # Regression example
 #' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 50, lr = 0.1)
 #' print(model)
@@ -260,13 +259,12 @@ print_model_score = function(scores, formula) {
 #' model_surv <- gbrs(Surv(time, status) ~ age + sex + ph.ecog,
 #'                    data = lung, objective = "survival")
 #' risk_scores <- predict(model_surv, lung)
-#' }
 #'
 #' @seealso \code{\link{predict.gbrs}}, \code{\link{print.gbrs}}
 #' @export
-gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
+gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
   formula <- as.formula(formula)
-  data <- process.formula(formula, df)
+  data <- process.formula(formula, data)
 
   # Determine objective if set to "auto"
   if (objective == "auto") {
@@ -301,10 +299,8 @@ gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate =
 #'   printing the model summary to the console.
 #'
 #' @examples
-#' \dontrun{
 #' model <- gbrs(mpg ~ wt + hp, data = mtcars)
 #' print(model)  # or simply: model
-#' }
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
 #' @export
@@ -320,10 +316,10 @@ print.gbrs <- function(obj) {
 #' during model fitting.
 #'
 #' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
-#' @param df A data frame containing the same predictor variables as used in
+#' @param newdata A data frame containing the same predictor variables as used in
 #'   model fitting. Must include all variables specified in the model formula.
 #'
-#' @return A numeric vector of predictions with length equal to \code{nrow(df)}:
+#' @return A numeric vector of predictions with length equal to \code{nrow(newdata)}:
 #'   \itemize{
 #'     \item For \code{objective = "continuous"}: Predicted continuous values
 #'     \item For \code{objective = "binary"}: Predicted probabilities (0 to 1)
@@ -332,7 +328,6 @@ print.gbrs <- function(obj) {
 #'   }
 #'
 #' @examples
-#' \dontrun{
 #' # Fit model on training data
 #' train_idx <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
 #' train_data <- mtcars[train_idx, ]
@@ -345,12 +340,11 @@ print.gbrs <- function(obj) {
 #'
 #' # Calculate RMSE
 #' rmse <- sqrt(mean((predictions - test_data$mpg)^2))
-#' }
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{print.gbrs}}
 #' @export
-predict.gbrs <- function(obj, df) {
-  data <- process.formula(obj$formula, df)
+predict.gbrs <- function(obj, newdata) {
+  data <- process.formula(obj$formula, newdata)
 
   pred <- switch(obj$objective,
     "continuous" = predict_score(obj$weights, data$x),
