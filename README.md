@@ -7,7 +7,7 @@ This library provides an algorithm based on gradient boosting that is capable of
 
 ## Features
 
-- **Interpretability**: Produces a simple points-based score card, optionnally with user defined thresholds.
+- **Interpretability**: Produces a simple points-based score card, optionally with user-defined thresholds.
 - **Multi-objective**: Supports regression, binary classification, and survival analysis (R only).
 - **Non-linear effects**: Captures complex relationships through gradient boosting.
 - **Cross-platform**: Works on Linux, macOS, and Windows.
