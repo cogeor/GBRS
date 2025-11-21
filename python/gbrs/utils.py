@@ -1,30 +1,32 @@
+from typing import Optional, Dict, Any, Tuple
+from numpy.typing import NDArray
 import numpy as np
 from gbrs.core import Model
 
 class GBRS:
-    def __init__(self, n_iter=300, lr=0.05, n_quantiles=5, ss_rate=1.0):
+    def __init__(self, n_iter: int = 300, lr: float = 0.05, n_quantiles: int = 5, ss_rate: float = 1.0) -> None:
         self._model = Model(n_iter, lr, n_quantiles, ss_rate)
 
-    def fit(self, X, y):
+    def fit(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> None:
         return self._model.fit(X, y)
 
-    def predict(self, X):
+    def predict(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._model.predict(X)
 
-    def fit_proba(self, X, y):
+    def fit_proba(self, X: NDArray[np.float64], y: NDArray[np.float64]) -> None:
         return self._model.fit_proba(X, y)
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._model.predict_proba(X)
     
-    def fit_survival(self, X, time, event):
+    def fit_survival(self, X: NDArray[np.float64], time: NDArray[np.float64], event: NDArray[np.float64]) -> None:
         """Fit the model for survival analysis."""
         return self._model.fit_survival(X, time, event)
     
-    def print(self, feature_names=None):
+    def print(self, feature_names: Optional[Dict[int, str]] = None) -> None:
         print_model(self._model, feature_names)
 
-    def save_model(self, filepath):
+    def save_model(self, filepath: str) -> None:
         """
         Save the model to a JSON file.
         
@@ -37,7 +39,7 @@ class GBRS:
         _save_model(self, filepath)
 
     @classmethod
-    def load_model(cls, filepath):
+    def load_model(cls, filepath: str) -> "GBRS":
         """
         Load a model from a JSON file.
         
@@ -54,7 +56,7 @@ class GBRS:
         from gbrs.model_io import load_model as _load_model
         return _load_model(filepath)
 
-    def _set_state(self, state_dict):
+    def _set_state(self, state_dict: Dict[str, Any]) -> None:
         """
         Set model state from a dictionary.
         
@@ -84,7 +86,7 @@ class GBRS:
         
         self._model.set_params(idxs_arr, split_vals_arr, w_arr, float(y0))
 
-def prune_weights(idx_array, split_val_array, w_array):
+def prune_weights(idx_array: NDArray[np.float64], split_val_array: NDArray[np.float64], w_array: NDArray[np.float64]) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     merged = {}
 
     for idx, split_val, w in zip(idx_array, split_val_array, w_array):
@@ -108,7 +110,7 @@ def prune_weights(idx_array, split_val_array, w_array):
 
     return idx_out, split_val_out, w_out
 
-def get_score_breaks(split_val, idx_array, w_array, idx, prec=1):
+def get_score_breaks(split_val: NDArray[np.float64], idx_array: NDArray[np.float64], w_array: NDArray[np.float64], idx: float, prec: int = 1) -> Dict[str, Any]:
     # Filter rows where idx == (idx - 1) like in R
     mask = (idx_array == idx)
     vals_split = split_val[mask]
@@ -163,7 +165,7 @@ def get_score_breaks(split_val, idx_array, w_array, idx, prec=1):
         "breaks": breaks
     }
 
-def print_score_table(score_breaks_dict):
+def print_score_table(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
     for idx, result in score_breaks_dict.items():
         if not result or not result.get("breaks"):
             continue
@@ -191,7 +193,7 @@ def print_score_table(score_breaks_dict):
 
         print("=" * total_width)
 
-def build_score_breaks_dict(split_val, idx, w, indices, feature_names=None):
+def build_score_breaks_dict(split_val: NDArray[np.float64], idx: NDArray[np.float64], w: NDArray[np.float64], indices: NDArray[np.float64], feature_names: Optional[Dict[int, str]] = None) -> Dict[float, Dict[str, Any]]:
     """
     Build a dict mapping each index to its score breaks dict.
     
@@ -216,7 +218,7 @@ def build_score_breaks_dict(split_val, idx, w, indices, feature_names=None):
             result[i] = score_breaks
     return result
 
-def print_model(model, feature_names=None):
+def print_model(model: Model, feature_names: Optional[Dict[int, str]] = None) -> None:
     """
     Print the model score table.
     

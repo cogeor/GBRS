@@ -5,11 +5,13 @@ This module provides functions to save and load GBRS models in JSON format,
 enabling cross-language compatibility between Python and R implementations.
 """
 
+from typing import Optional, Any
+from numpy.typing import NDArray
 import json
 import numpy as np
 
 
-def save_model(model, filepath, objective=None, formula=None):
+def save_model(model: "GBRS", filepath: str, objective: Optional[str] = None, formula: Optional[str] = None) -> None:
     """
     Save a GBRS model to a JSON file.
     
@@ -73,7 +75,7 @@ def save_model(model, filepath, objective=None, formula=None):
         json.dump(model_dict, f, indent=2)
 
 
-def load_model(filepath):
+def load_model(filepath: str) -> "GBRS":
     """
     Load a GBRS model from a JSON file.
     
@@ -110,7 +112,7 @@ def load_model(filepath):
     return model
 
 
-def save_predictions(predictions, filepath):
+def save_predictions(predictions: NDArray[np.float64], filepath: str) -> None:
     """
     Save model predictions to a JSON file for cross-language comparison.
     
@@ -128,7 +130,7 @@ def save_predictions(predictions, filepath):
         json.dump({"predictions": pred_list}, f, indent=2)
 
 
-def load_predictions(filepath):
+def load_predictions(filepath: str) -> NDArray[np.float64]:
     """
     Load predictions from a JSON file.
     
