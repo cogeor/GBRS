@@ -209,7 +209,7 @@ print.md <- function(x, ...) {
   # Start Markdown table
   md_lines <- c(
     "| Variable | Category | Points |",
-    "|:---|:---|:---|"
+    "|:---|:---:|---:|"
   )
   
   # Process each feature
