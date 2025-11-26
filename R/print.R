@@ -83,7 +83,7 @@ print_model_score = function(scores, formula) {
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
 #' @export
-print.gbrs <- function(x, format = "text", ...) {
+print.gbrs <- function(x, format = "ascii_h", ...) {
     if (format == "latex") {
         print.latex(x, ...)
     } else if (format == "md") {
@@ -97,6 +97,19 @@ print.gbrs <- function(x, format = "text", ...) {
     } else {
         print_model_score(x$weights, x$formula)
     }
+}
+
+#' Print GBRS Model in Legacy Vertical Format
+#'
+#' @description
+#' Prints the GBRS model using the legacy vertical format.
+#'
+#' @param x An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param ... Additional arguments passed to print.
+#'
+#' @export
+print.vertical <- function(x, ...) {
+    print(x, format = "text", ...)
 }
 
 #' Print GBRS Model as LaTeX Table

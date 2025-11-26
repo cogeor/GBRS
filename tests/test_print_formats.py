@@ -15,8 +15,11 @@ def test_print_formats():
     
     feature_names = {0: "Feature_A", 1: "Feature_B"}
     
-    print("\n--- Default (Text) ---")
+    print("\n--- Default (Should be Horizontal ASCII) ---")
     model.print(feature_names=feature_names)
+    
+    print("\n--- Vertical Text (Explicit) ---")
+    model.print_vertical(feature_names=feature_names)
     
     print("\n--- LaTeX Horizontal ---")
     model.print(feature_names=feature_names, format="latex_h")

@@ -23,7 +23,7 @@ class GBRS:
         """Fit the model for survival analysis."""
         return self._model.fit_survival(X, time, event, user_quantiles)
     
-    def print(self, feature_names: Optional[Dict[int, str]] = None, format: str = "text") -> None:
+    def print(self, feature_names: Optional[Dict[int, str]] = None, format: str = "ascii_h") -> None:
         """
         Print the model score table.
         
@@ -35,6 +35,17 @@ class GBRS:
             Output format: "text" (default), "latex", "md", "latex_h", "md_h", "ascii_h".
         """
         print_model(self._model, feature_names, format)
+
+    def print_vertical(self, feature_names: Optional[Dict[int, str]] = None) -> None:
+        """
+        Print the model score table in the legacy vertical format.
+        
+        Parameters
+        ----------
+        feature_names : dict, optional
+            Mapping from index to feature name.
+        """
+        self.print(feature_names, format="text")
 
     def save_model(self, filepath: str) -> None:
         """
@@ -350,7 +361,7 @@ def build_score_breaks_dict(split_val: NDArray[np.float64], idx: NDArray[np.floa
             result[i] = score_breaks
     return result
 
-def print_model(model: Model, feature_names: Optional[Dict[int, str]] = None, format: str = "text") -> None:
+def print_model(model: Model, feature_names: Optional[Dict[int, str]] = None, format: str = "ascii_h") -> None:
     """
     Print the model score table.
     

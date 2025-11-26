@@ -58,9 +58,13 @@ if (length(found_splits) > 0) {
     cat("⚠ No custom splits for 'age' were selected by the model (this can happen if they are not informative).\n")
 }
 
-# Test standard print
-cat("\n=== Standard Print ===\n")
+# Test standard print (horizontal default)
+cat("\n=== Standard Print (Horizontal) ===\n")
 print(model)
+
+# Test legacy vertical print
+cat("\n=== Legacy Vertical Print ===\n")
+print.vertical(model)
 
 # Test LaTeX print (vertical)
 cat("\n=== LaTeX Print (Vertical) ===\n")

@@ -1,6 +1,6 @@
 # GBRS: Gradient Boosted Risk Scoring
 
-![CI](https://github.com/cgeo/GBRS/actions/workflows/ci.yml/badge.svg)
+[![pipeline status](https://gitlab.com/cgeo/GBRS/badges/master/pipeline.svg)](https://gitlab.com/cgeo/GBRS/-/commits/master)
 ![Python](https://img.shields.io/badge/python-3.7%2B-blue)
 ![R](https://img.shields.io/badge/R-4.0%2B-blue)
 
@@ -68,51 +68,22 @@ from gbrs import GBRS
 X_train = np.random.rand(100, 5)
 y_train = (X_train[:, 0] + X_train[:, 1] > 1).astype(float)
 
+# Optional: Define custom quantiles for specific features
+# user_quantiles = [np.array([0.2, 0.8]), None, ...] 
+user_quantiles = None
+
 # Initialize and fit model
-# n_iter: Number of boosting iterations
-# lr: Learning rate
-# n_quantiles: Number of bins for feature discretization
 model = GBRS(n_iter=300, lr=0.05, n_quantiles=5)
 
-# For regression (continuous target)
-# model.fit(X_train, y_train)
-
-# For binary classification (probability)
-model.fit_proba(X_train, y_train)
+# Fit (supports fit, fit_proba, fit_survival)
+model.fit_proba(X_train, y_train, user_quantiles=user_quantiles)
 
 # Predict
 preds = model.predict_proba(X_train)
 
-# Print the interpretable score table
-# You can provide feature names for better readability
+# Print the interpretable score table (defaults to horizontal format)
 feature_names = {i: f"Feature_{i}" for i in range(X_train.shape[1])}
 model.print(feature_names)
-
-# Use horizontal format
-model.print(feature_names, format="latex_h")
-```
-
-### User-Defined Thresholds (Python)
-
-You can provide custom thresholds for features using `user_quantiles`.
-
-```python
-import numpy as np
-from gbrs import GBRS
-
-# ... load data ...
-
-# Define custom quantiles
-# List of numpy arrays, one for each feature
-# Use None for features where you want auto-quantiles (if supported) or define for all
-user_quantiles = [
-    np.array([0.2, 0.5, 0.8]),  # Feature 0
-    np.array([0.3, 0.7]),       # Feature 1
-    # ...
-]
-
-model = GBRS(n_iter=100, lr=0.1)
-model.fit(X, y, user_quantiles=user_quantiles)
 ```
 
 ### R
@@ -121,134 +92,39 @@ The R API provides a formula-based interface and supports survival analysis.
 
 ```R
 library(gbrs)
+library(survival)
 
-# Standard regression/classification
-model <- gbrs(y ~ x1 + x2, data = df, objective = "binary", 
-              n_max = 300, lr = 0.05, n_quantiles = 5)
+# Optional: Define custom thresholds
+custom_q <- list(age = c(50, 70))
 
-# Survival analysis
-# Requires 'time' and 'status' columns in the response
-surv_model <- gbrs(Surv(time, status) ~ ., data = survival_df, objective = "survival",
-                   n_max = 300, lr = 0.05, n_quantiles = 5)
+# Fit model (supports continuous, binary, and survival objectives)
+model <- gbrs(Surv(time, status) ~ trt + age + celltype, 
+              data = veteran, 
+              objective = "survival",
+              n_max = 300, lr = 0.05, n_quantiles = 5,
+              user_quantiles = custom_q)
 
-# Predict
-preds <- predict(model, test_df)
-
-# Print score table
+# Print score table (defaults to horizontal format)
 print(model)
-
-## Custom thresholds (user_quantiles)
-
-You can provide your own thresholds for each feature via the `user_quantiles` argument when fitting the model. This allows you to define the break points used to compute scores.
-
-```R
-# Define custom quantiles for selected features
-custom_q <- list(
-  trt = c(0.0, 0.5, 1.0),   # thresholds for 'trt'
-  age = c(30, 50, 70)        # thresholds for 'age'
-)
-
-model_custom <- gbrs(
-  Surv(time, status) ~ trt + age + celltype,
-  data = veteran,
-  objective = "survival",
-  n_max = 300,
-  lr = 0.05,
-  n_quantiles = 5,
-  user_quantiles = custom_q
-)
-
-print(model_custom)
-
-# Print in horizontal LaTeX format
-print(model_custom, format="latex_h")
 ```
 
 ## Example Output
 
-### LaTeX Table (`model_latex_table.tex`)
-```latex
-\begin{table}[htbp]
-\centering
-\caption{GBRS Survival Risk Score for Veteran Lung Cancer Dataset}
-\label{tab:veteran_score}
-\begin{tabular}{lcc}
-\hline
-\textbf{Variable} & \textbf{Category} & \textbf{Points} \\
-\hline
-\textbf{trt} & $<0.0$ & 0.0 \\
- & [0.0,1.0) & 0.0 \\
- & $>=1.0$ & 0.3 \\
-\textbf{celltype} & FALSE & 0.0 \\
- & TRUE & 0.8 \\
-\textbf{karno} & FALSE & 0.0 \\
- & TRUE & 0.7 \\
-\textbf{diagtime} & FALSE & 0.0 \\
- & TRUE & -0.4 \\
-\textbf{age} & $<30.0$ & 3.5 \\
- & [30.0,40.0) & 3.2 \\
- & [40.0,50.0) & 2.2 \\
- & [50.0,60.0) & 2.1 \\
- & [60.0,80.0) & 1.5 \\
- & $>=80.0$ & 0.0 \\
-\textbf{prior} & $<2.0$ & 1.0 \\
- & [2.0,3.0) & 0.7 \\
- & [3.0,4.0) & 1.2 \\
- & [4.0,5.0) & 1.3 \\
- & [5.0,11.0) & 1.4 \\
- & [11.0,12.0) & 1.1 \\
- & [12.0,18.0) & 0.7 \\
- & $>=18.0$ & 1.0 \\
-\hline
-\end{tabular}
-\end{table}
-```
+GBRS models are printed in a horizontal format where thresholds are displayed above the scores, making them easy to read and include in documents.
 
-### Markdown Table (`model_md_table.md`)
-| Variable | Category | Points |
-|:---|:---:|---:|
-| **trt** | <0.0 | 0.0 |
-| | [0.0,1.0) | 0.0 |
-| | >=1.0 | 0.3 |
-| **celltype** | FALSE | 0.0 |
-| | TRUE | 0.8 |
-| **karno** | FALSE | 0.0 |
-| | TRUE | 0.7 |
-| **diagtime** | FALSE | 0.0 |
-| | TRUE | -0.4 |
-| **age** | <30.0 | 3.5 |
-| | [30.0,40.0) | 3.2 |
-| | [40.0,50.0) | 2.2 |
-| | [50.0,60.0) | 2.1 |
-| | [60.0,80.0) | 1.5 |
-| | >=80.0 | 0.0 |
-| **prior** | <2.0 | 1.0 |
-| | [2.0,3.0) | 0.7 |
-| | [3.0,4.0) | 1.2 |
-| | [4.0,5.0) | 1.3 |
-| | [5.0,11.0) | 1.4 |
-| | [11.0,12.0) | 1.1 |
-| | [12.0,18.0) | 0.7 |
-| | >=18.0 | 1.0 |
-
-### Horizontal Formats
-
-You can also print the score table in a horizontal format, where thresholds are displayed above the scores.
-
-#### LaTeX Horizontal (`format="latex_h"`)
-
-```latex
-\begin{tabular}{llll}
-\hline
-Feature_A & \ensuremath{<} 0.0 & [0.0,0.4) & \ensuremath{\ge} 0.4 \\
- & 0.0 & 0.0 & 0.9 \\
-\hline
-\end{tabular}
-```
-
-#### Markdown Horizontal (`format="md_h"`)
+### Markdown Horizontal (`format="md_h"`)
 
 | Variable |  |  |  |
 |:---|:---|:---|:---|
-| **Feature_A** | <0.0 | [0.0,0.4) | >=0.4 |
-| | 0.0 | 0.0 | 0.9 |
+| **trt** | <1.0 | >=1.0 | |
+| | 0.0 | 0.3 | |
+| **celltype** | FALSE | TRUE | |
+| | 0.0 | 0.8 | |
+| **karno** | FALSE | TRUE | |
+| | 0.0 | 0.7 | |
+| **diagtime** | FALSE | TRUE | |
+| | 0.0 | -0.4 | |
+| **age** | <50.0 | [50.0,70.0) | >=70.0 |
+| | 3.0 | 2.0 | 0.0 |
+| **prior** | <5.0 | >=5.0 | |
+| | 1.0 | 1.5 | |
