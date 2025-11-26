@@ -214,6 +214,30 @@ gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate
                         standard = "continuous")
   }
 
+  # Map user_quantiles to design matrix columns if provided
+  if (!is.null(user_quantiles) && is.list(user_quantiles)) {
+    # If named list, map to columns
+    if (!is.null(names(user_quantiles))) {
+        col_names <- colnames(data$x)
+        n_cols <- ncol(data$x)
+        ordered_quantiles <- vector("list", n_cols)
+        
+        for (i in 1:n_cols) {
+          col_name <- col_names[i]
+          if (col_name %in% names(user_quantiles)) {
+            ordered_quantiles[[i]] <- user_quantiles[[col_name]]
+          }
+        }
+        user_quantiles <- ordered_quantiles
+    } else {
+        # Positional list: check length
+        if (length(user_quantiles) != ncol(data$x)) {
+            stop(paste0("Length of user_quantiles list (", length(user_quantiles), 
+                        ") must match number of features (", ncol(data$x), ")"))
+        }
+    }
+  }
+
   # Fit model based on type
   weights <- switch(objective,
     "continuous" = fit(data$x, data$y, n_max, lr, n_quantiles, ss_rate),
