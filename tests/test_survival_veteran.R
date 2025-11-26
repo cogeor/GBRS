@@ -2,7 +2,7 @@ library(gbrs)
 library(survival)
 
 # Load a real survival dataset
-data(veteran, package = "survival")
+data(veteran)
 
 cat("=== Testing GBRS Survival Analysis ===\n\n")
 cat("Dataset: veteran (lung cancer survival)\n")
@@ -12,7 +12,7 @@ cat("Samples:", nrow(veteran), "\n\n")
 cat("Fitting GBRS survival model...\n")
 model <- gbrs(
   Surv(time, status) ~ trt + celltype + karno + diagtime + age + prior,
-  df = veteran,
+  data = veteran,
   n_max = 50,
   lr = 0.05,
   n_quantiles = 10,

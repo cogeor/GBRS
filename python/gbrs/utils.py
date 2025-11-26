@@ -1,30 +1,113 @@
+from typing import Optional, Dict, Any, Tuple, List
+from numpy.typing import NDArray
 import numpy as np
 from gbrs.core import Model
 
 class GBRS:
-    def __init__(self, n_iter=300, lr=0.05, n_quantiles=5, ss_rate=1.0):
+    def __init__(self, n_iter: int = 300, lr: float = 0.05, n_quantiles: int = 5, ss_rate: float = 1.0) -> None:
         self._model = Model(n_iter, lr, n_quantiles, ss_rate)
 
-    def fit(self, X, y):
-        return self._model.fit(X, y)
+    def fit(self, X: NDArray[np.float64], y: NDArray[np.float64], user_quantiles: Optional[list] = None) -> None:
+        return self._model.fit(X, y, user_quantiles)
 
-    def predict(self, X):
+    def predict(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._model.predict(X)
 
-    def fit_proba(self, X, y):
-        return self._model.fit_proba(X, y)
+    def fit_proba(self, X: NDArray[np.float64], y: NDArray[np.float64], user_quantiles: Optional[list] = None) -> None:
+        return self._model.fit_proba(X, y, user_quantiles)
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
         return self._model.predict_proba(X)
     
-    def fit_survival(self, X, time, event):
+    def fit_survival(self, X: NDArray[np.float64], time: NDArray[np.float64], event: NDArray[np.float64], user_quantiles: Optional[list] = None) -> None:
         """Fit the model for survival analysis."""
-        return self._model.fit_survival(X, time, event)
+        return self._model.fit_survival(X, time, event, user_quantiles)
     
-    def print(self, feature_names=None):
-        print_model(self._model, feature_names)
+    def print(self, feature_names: Optional[Dict[int, str]] = None, format: str = "ascii_h") -> None:
+        """
+        Print the model score table.
+        
+        Parameters
+        ----------
+        feature_names : dict, optional
+            Mapping from index to feature name.
+        format : str, optional
+            Output format: "text" (default), "latex", "md", "latex_h", "md_h", "ascii_h".
+        """
+        print_model(self._model, feature_names, format)
 
-def prune_weights(idx_array, split_val_array, w_array):
+    def print_vertical(self, feature_names: Optional[Dict[int, str]] = None) -> None:
+        """
+        Print the model score table in the legacy vertical format.
+        
+        Parameters
+        ----------
+        feature_names : dict, optional
+            Mapping from index to feature name.
+        """
+        self.print(feature_names, format="text")
+
+    def save_model(self, filepath: str) -> None:
+        """
+        Save the model to a JSON file.
+        
+        Parameters
+        ----------
+        filepath : str
+            Path to save the model file
+        """
+        from gbrs.model_io import save_model as _save_model
+        _save_model(self, filepath)
+
+    @classmethod
+    def load_model(cls, filepath: str) -> "GBRS":
+        """
+        Load a model from a JSON file.
+        
+        Parameters
+        ----------
+        filepath : str
+            Path to the model file
+            
+        Returns
+        -------
+        GBRS
+            Loaded model instance
+        """
+        from gbrs.model_io import load_model as _load_model
+        return _load_model(filepath)
+
+    def _set_state(self, state_dict: Dict[str, Any]) -> None:
+        """
+        Set model state from a dictionary.
+        
+        Parameters
+        ----------
+        state_dict : dict
+            Dictionary containing model parameters
+        """
+        rules = state_dict["rules"]
+        
+        idxs = []
+        split_vals = []
+        w = []
+        y0 = 0.0
+        
+        for i, rule in enumerate(rules):
+            idxs.append(rule["idx"])
+            split_vals.append(rule["split_val"])
+            w.append(rule["w"])
+            if i == 0:
+                y0 = rule.get("cst", 0.0)
+        
+        import numpy as np
+        idxs_arr = np.array(idxs, dtype=np.float64)
+        split_vals_arr = np.array(split_vals, dtype=np.float64)
+        w_arr = np.array(w, dtype=np.float64)
+        
+        self._model.set_params(idxs_arr, split_vals_arr, w_arr, float(y0))
+
+def prune_weights(idx_array: NDArray[np.float64], split_val_array: NDArray[np.float64], w_array: NDArray[np.float64]) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     merged = {}
 
     for idx, split_val, w in zip(idx_array, split_val_array, w_array):
@@ -48,7 +131,7 @@ def prune_weights(idx_array, split_val_array, w_array):
 
     return idx_out, split_val_out, w_out
 
-def get_score_breaks(split_val, idx_array, w_array, idx, prec=1):
+def get_score_breaks(split_val: NDArray[np.float64], idx_array: NDArray[np.float64], w_array: NDArray[np.float64], idx: float, prec: int = 1) -> Dict[str, Any]:
     # Filter rows where idx == (idx - 1) like in R
     mask = (idx_array == idx)
     vals_split = split_val[mask]
@@ -103,7 +186,7 @@ def get_score_breaks(split_val, idx_array, w_array, idx, prec=1):
         "breaks": breaks
     }
 
-def print_score_table(score_breaks_dict):
+def print_score_table(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
     for idx, result in score_breaks_dict.items():
         if not result or not result.get("breaks"):
             continue
@@ -130,7 +213,130 @@ def print_score_table(score_breaks_dict):
         print(weights_row + "|")
 
         print("=" * total_width)
-def build_score_breaks_dict(split_val, idx, w, indices, feature_names=None):
+
+def print_latex_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
+    # Calculate max columns needed
+    max_cols = 0
+    for idx, result in score_breaks_dict.items():
+        if result and result.get("breaks"):
+            max_cols = max(max_cols, len(result["breaks"]))
+
+    col_spec = "l" + "l" * max_cols
+    print(f"\\begin{{tabular}}{{{col_spec}}}")
+    print("\\hline")
+
+    for idx, result in score_breaks_dict.items():
+        if not result or not result.get("breaks"):
+            continue
+            
+        name = result.get("feature_name") or result.get("name") or f"F {int(idx)}"
+        breaks = result["breaks"]
+        weights = result["weights"]
+        
+        # Escape LaTeX
+        breaks = [b.replace("<", "\\ensuremath{<} ").replace(">=", "\\ensuremath{\\ge} ").replace(">", "\\ensuremath{>} ") for b in breaks]
+        
+        # Pad
+        n_pad = max_cols - len(breaks)
+        breaks_padded = breaks + [""] * n_pad
+        weights_padded = weights + [""] * n_pad
+        
+        # Row 1
+        row1 = f"{name} & " + " & ".join(breaks_padded) + " \\\\"
+        print(row1)
+        
+        # Row 2
+        row2 = " & " + " & ".join(weights_padded) + " \\\\"
+        print(row2)
+        
+    print("\\hline")
+    print("\\end{tabular}")
+
+def print_md_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
+    # Calculate max columns needed
+    max_cols = 0
+    for idx, result in score_breaks_dict.items():
+        if result and result.get("breaks"):
+            max_cols = max(max_cols, len(result["breaks"]))
+
+    header = "| Variable | " + " | " * max_cols + "|"
+    separator = "|:---|" + ":---|" * max_cols + "|"
+    print(header)
+    print(separator)
+
+    for idx, result in score_breaks_dict.items():
+        if not result or not result.get("breaks"):
+            continue
+            
+        name = result.get("feature_name") or result.get("name") or f"F {int(idx)}"
+        breaks = result["breaks"]
+        weights = result["weights"]
+        
+        # Pad
+        n_pad = max_cols - len(breaks)
+        breaks_padded = breaks + [""] * n_pad
+        weights_padded = weights + [""] * n_pad
+        
+        # Row 1
+        row1 = f"| **{name}** | " + " | ".join(breaks_padded) + " |"
+        print(row1)
+        
+        # Row 2
+        row2 = "| | " + " | ".join(weights_padded) + " |"
+        print(row2)
+
+def print_ascii_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
+    rows = []
+    for idx, result in score_breaks_dict.items():
+        if result and result.get("breaks"):
+            rows.append({
+                "name": result.get("feature_name") or result.get("name") or f"F {int(idx)}",
+                "breaks": result["breaks"],
+                "weights": result["weights"]
+            })
+            
+    if not rows:
+        return
+        
+    max_bins = max(len(r["breaks"]) for r in rows)
+    col_widths = [0] * (max_bins + 1)
+    
+    # Variable name width
+    col_widths[0] = max(len(r["name"]) for r in rows)
+    
+    # Bin widths
+    for j in range(max_bins):
+        w = 0
+        for r in rows:
+            if len(r["breaks"]) > j:
+                w = max(w, len(r["breaks"][j]), len(r["weights"][j]))
+        col_widths[j+1] = w
+        
+    # Padding
+    col_widths = [w + 2 for w in col_widths]
+    
+    def print_row(cols):
+        line = ""
+        for j, val in enumerate(cols):
+            width = col_widths[j]
+            line += val.ljust(width)
+        print(line)
+
+    for r in rows:
+        # Row 1
+        cols1 = [r["name"]] + r["breaks"]
+        if len(cols1) < len(col_widths):
+            cols1 += [""] * (len(col_widths) - len(cols1))
+        print_row(cols1)
+        
+        # Row 2
+        cols2 = [""] + r["weights"]
+        if len(cols2) < len(col_widths):
+            cols2 += [""] * (len(col_widths) - len(cols2))
+        print_row(cols2)
+        print()
+
+def build_score_breaks_dict(split_val: NDArray[np.float64], idx: NDArray[np.float64], w: NDArray[np.float64], indices: NDArray[np.float64], feature_names: Optional[Dict[int, str]] = None) -> Dict[float, Dict[str, Any]]:
     """
     Build a dict mapping each index to its score breaks dict.
     
@@ -155,13 +361,14 @@ def build_score_breaks_dict(split_val, idx, w, indices, feature_names=None):
             result[i] = score_breaks
     return result
 
-def print_model(model, feature_names=None):
+def print_model(model: Model, feature_names: Optional[Dict[int, str]] = None, format: str = "ascii_h") -> None:
     """
     Print the model score table.
     
     Parameters:
         model: The model object (C++ wrapper).
         feature_names (dict, optional): Mapping from index to feature name.
+        format: Output format ("text", "latex", "md", "latex_h", "md_h", "ascii_h")
     """
     params = model.get_params()
     idxs = model.get_idxs()
@@ -177,4 +384,15 @@ def print_model(model, feature_names=None):
         indices.sort()
         
     d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names)
-    print_score_table(d)
+    
+    if format == "text":
+        print_score_table(d)
+    elif format == "latex_h":
+        print_latex_horizontal(d)
+    elif format == "md_h":
+        print_md_horizontal(d)
+    elif format == "ascii_h":
+        print_ascii_horizontal(d)
+    else:
+        # Fallback to text for now if other formats not implemented or requested
+        print_score_table(d)

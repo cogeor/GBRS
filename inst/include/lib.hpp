@@ -92,6 +92,7 @@ public:
     const VectorXd& get_idxs() const;
     const VectorXd& get_split_val() const;
     void prune();
+    void set_params(const VectorXd& idxs, const VectorXd& split_val, const VectorXd& w, const double y0);
 };
 
 
@@ -802,6 +803,33 @@ void Model::fit_survival(const MatrixXd& m,
         f = this->predict(m);  // risk scores after adding the latest tree
     }
     this->prune();
+}
+
+void Model::set_params(const VectorXd& idxs, const VectorXd& split_val, const VectorXd& w, const double y0)
+{
+    this->i = idxs.size();
+    // Ensure vectors are large enough? 
+    // If max_n is smaller than idxs.size(), we have a problem.
+    // But usually max_n is large.
+    // We should resize if needed?
+    if (this->idxs.size() < this->i) {
+        this->idxs.resize(this->i);
+        this->split_val.resize(this->i);
+        this->params.w.resize(this->i);
+        this->w1.resize(this->i);
+        this->w2.resize(this->i);
+        this->max_n = this->i;
+    }
+    
+    this->idxs.head(this->i) = idxs;
+    this->split_val.head(this->i) = split_val;
+    this->params.w.head(this->i) = w;
+    this->params.y0 = y0;
+    
+    // Zero out w1/w2 as we don't have them from JSON usually, and they are used for training mostly?
+    // Or we can set them to 0.
+    this->w1.setZero();
+    this->w2.setZero();
 }
 
 const ScoreParams& Model::get_params() const

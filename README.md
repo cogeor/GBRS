@@ -1,8 +1,21 @@
 # GBRS: Gradient Boosted Risk Scoring
 
+[![pipeline status](https://gitlab.com/cgeo/GBRS/badges/dev/pipeline.svg)](https://gitlab.com/cgeo/GBRS/-/commits/dev)
+![Python](https://img.shields.io/badge/python-3.7%2B-blue)
+![R](https://img.shields.io/badge/R-4.0%2B-blue)
+
 Risk scores are an interpretable, explainable, and actionable class of machine learning models used in clinical settings, insurance, and risk management. Unlike most computational methods, risk scores are designed to be computed by a human by attributing points to a data sample based on a limited set of criteria.
 
 This library provides an algorithm based on gradient boosting that is capable of modeling nonlinear effects, along with a C++ implementation with Python and R bindings.
+
+
+## Features
+
+- **Interpretability**: Produces a simple points-based score card, optionally with user-defined thresholds.
+- **Multi-objective**: Supports regression, binary classification, and survival analysis.
+- **Non-linear effects**: Captures complex relationships through gradient boosting.
+- **Cross-platform**: Works on Linux, macOS, and Windows.
+
 
 ## Installation
 
@@ -55,23 +68,20 @@ from gbrs import GBRS
 X_train = np.random.rand(100, 5)
 y_train = (X_train[:, 0] + X_train[:, 1] > 1).astype(float)
 
+# Optional: Define custom quantiles for specific features
+# user_quantiles = [np.array([0.2, 0.8]), None, ...] 
+user_quantiles = None
+
 # Initialize and fit model
-# n_iter: Number of boosting iterations
-# lr: Learning rate
-# n_quantiles: Number of bins for feature discretization
 model = GBRS(n_iter=300, lr=0.05, n_quantiles=5)
 
-# For regression (continuous target)
-# model.fit(X_train, y_train)
-
-# For binary classification (probability)
-model.fit_proba(X_train, y_train)
+# Fit (supports fit, fit_proba, fit_survival)
+model.fit_proba(X_train, y_train, user_quantiles=user_quantiles)
 
 # Predict
 preds = model.predict_proba(X_train)
 
-# Print the interpretable score table
-# You can provide feature names for better readability
+# Print the interpretable score table (defaults to horizontal format)
 feature_names = {i: f"Feature_{i}" for i in range(X_train.shape[1])}
 model.print(feature_names)
 ```
@@ -82,27 +92,39 @@ The R API provides a formula-based interface and supports survival analysis.
 
 ```R
 library(gbrs)
+library(survival)
 
-# Standard regression/classification
-model <- gbrs(y ~ x1 + x2, data = df, objective = "binary", 
-              n_max = 300, lr = 0.05, n_quantiles = 5)
+# Optional: Define custom thresholds
+custom_q <- list(age = c(50, 70))
 
-# Survival analysis
-# Requires 'time' and 'status' columns in the response
-surv_model <- gbrs(Surv(time, status) ~ ., data = survival_df, objective = "survival",
-                   n_max = 300, lr = 0.05, n_quantiles = 5)
+# Fit model (supports continuous, binary, and survival objectives)
+model <- gbrs(Surv(time, status) ~ trt + age + celltype, 
+              data = veteran, 
+              objective = "survival",
+              n_max = 300, lr = 0.05, n_quantiles = 5,
+              user_quantiles = custom_q)
 
-# Predict
-preds <- predict(model, test_df)
-
-# Print score table
+# Print score table (defaults to horizontal format)
 print(model)
 ```
 
-## Features
+## Example Output
 
-- **Non-linear effects**: Captures complex relationships through gradient boosting.
-- **Interpretability**: Produces a simple points-based score card.
-- **Multi-objective**: Supports regression, binary classification, and survival analysis (R only).
-- **Cross-platform**: Works on Linux, macOS, and Windows.
+GBRS models are printed in a horizontal format where thresholds are displayed above the scores, making them easy to read and include in documents.
 
+### Markdown Horizontal (`format="md_h"`)
+
+| Variable |  |  |  |
+|:---|:---|:---|:---|
+| **trt** | <1.0 | >=1.0 | |
+| | 0.0 | 0.3 | |
+| **celltype** | FALSE | TRUE | |
+| | 0.0 | 0.8 | |
+| **karno** | FALSE | TRUE | |
+| | 0.0 | 0.7 | |
+| **diagtime** | FALSE | TRUE | |
+| | 0.0 | -0.4 | |
+| **age** | <50.0 | [50.0,70.0) | >=70.0 |
+| | 3.0 | 2.0 | 0.0 |
+| **prior** | <5.0 | >=5.0 | |
+| | 1.0 | 1.5 | |

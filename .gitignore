@@ -1,8 +1,13 @@
 /dev
 /build
+/dist
+/scripts
 *.egg-info
 *.so
+*.tar.gz
 .vscode
 benchmarks
 data
+src/*.o
+*.pyd
 **__pycache__

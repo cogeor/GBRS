@@ -1,5 +1,4 @@
 
-
 delete.intercept = function(mm) {
     saveattr = attributes(mm)
     intercept = which(saveattr$assign == 0)
@@ -150,64 +149,6 @@ convert.weights.score = function(w) {
     list("score"=score_mat, "cst"=cst)
 }
 
-get.score.breaks = function(scores, idx) {
-    prec=1
-    vals = scores[scores$idx==idx-1, ] 
-    if (length(vals) == 0) {
-        return(list()) 
-    }
-    if (is.null(nrow(vals))) {
-        return(list("index" = idx, "breaks" = c(paste0("<", vals$split_val)), "weights"=c(sprintf(paste0("%.", prec, "f"), vals$w))))
-    }
-    if (nrow(vals) == 1 && vals$split_val == 0) {
-        return(list("index" = idx, "weights" = weights, "breaks" = c("FALSE", "TRUE")))
-    }
-    sorted_idxs = order(vals$split_val)
-    vals = vals[sorted_idxs, ]
-    weights = double(nrow(vals) + 1)
-    for(i in 1:(length(weights)-1)) {
-        if (vals$w[i] > 0) {
-            weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
-        } else {
-            weights[1:i] = weights[1:i] - vals$w[i]
-            #weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
-        }
-    }
-    weights = sprintf(paste0("%.", prec, "f"), weights)
-    sorted_vals = vals$split_val
-    sorted_vals = sprintf(paste0("%.", prec, "f"), sorted_vals)
-
-    out = character(length(sorted_vals) + 1)
-    out[1] = paste0("<", sorted_vals[1])
-    for (i in 2:length(sorted_vals)) {
-        out[i] = paste0("[", sorted_vals[i-1], ",", sorted_vals[i], ")")
-    }
-    out[length(sorted_vals)+1] = paste0(">=", sorted_vals[length(sorted_vals)])
-    list("index" = idx, "weights" = weights, "breaks" = out)
-}
-
-score_line = function(score_breaks, names) {
-    da = data.frame(breaks=c(names[score_breaks$index], score_breaks$breaks), weights=c("", score_breaks$weights))
-    t(da)
-}
-
-print_model_score = function(scores, formula) {
-    formula = as.formula(formula)
-    terms_obj = terms(formula)
-    independent_vars <- attr(terms_obj, "term.labels")
-    a = data.frame()
-    for (i in 1:length(independent_vars)) {
-        if ((i-1) %in% scores$idx){
-            score_breaks = get.score.breaks(scores, i)
-            if (length(score_breaks) > 0) {
-                line = score_line(score_breaks, independent_vars)
-                print(line)
-                cat("\n")
-            }
-        }
-    }
-}
-
 #' Fit a Gradient Boosted Rule Set Model
 #'
 #' @description
@@ -218,7 +159,7 @@ print_model_score = function(scores, formula) {
 #' @param formula A formula specifying the model. For regression and classification,
 #'   use standard R formula syntax (e.g., \code{y ~ x1 + x2}). For survival analysis,
 #'   use \code{Surv(time, event) ~ predictors} from the survival package.
-#' @param df A data frame containing the variables specified in the formula.
+#' @param data A data frame containing the variables specified in the formula.
 #' @param n_max Integer. Maximum number of boosting iterations (default: 100).
 #'   More iterations can improve fit but may lead to overfitting.
 #' @param lr Numeric. Learning rate (shrinkage parameter) for gradient boosting
@@ -244,7 +185,6 @@ print_model_score = function(scores, formula) {
 #'   \item{objective}{The objective function used ("continuous", "binary", or "survival")}
 #'
 #' @examples
-#' \dontrun{
 #' # Regression example
 #' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 50, lr = 0.1)
 #' print(model)
@@ -260,19 +200,42 @@ print_model_score = function(scores, formula) {
 #' model_surv <- gbrs(Surv(time, status) ~ age + sex + ph.ecog,
 #'                    data = lung, objective = "survival")
 #' risk_scores <- predict(model_surv, lung)
-#' }
 #'
 #' @seealso \code{\link{predict.gbrs}}, \code{\link{print.gbrs}}
 #' @export
-gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
+gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
   formula <- as.formula(formula)
-  data <- process.formula(formula, df)
+  data <- process.formula(formula, data)
 
   # Determine objective if set to "auto"
   if (objective == "auto") {
     objective <- switch(data$type,
                         survival = "survival",
                         standard = "continuous")
+  }
+
+  # Map user_quantiles to design matrix columns if provided
+  if (!is.null(user_quantiles) && is.list(user_quantiles)) {
+    # If named list, map to columns
+    if (!is.null(names(user_quantiles))) {
+        col_names <- colnames(data$x)
+        n_cols <- ncol(data$x)
+        ordered_quantiles <- vector("list", n_cols)
+        
+        for (i in 1:n_cols) {
+          col_name <- col_names[i]
+          if (col_name %in% names(user_quantiles)) {
+            ordered_quantiles[[i]] <- user_quantiles[[col_name]]
+          }
+        }
+        user_quantiles <- ordered_quantiles
+    } else {
+        # Positional list: check length
+        if (length(user_quantiles) != ncol(data$x)) {
+            stop(paste0("Length of user_quantiles list (", length(user_quantiles), 
+                        ") must match number of features (", ncol(data$x), ")"))
+        }
+    }
   }
 
   # Fit model based on type
@@ -289,29 +252,6 @@ gbrs <- function(formula, df, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate =
   obj
 }
 
-#' Print a GBRS Model
-#'
-#' @description
-#' S3 print method for GBRS models. Displays the learned rules in a human-readable
-#' format, showing feature names, split thresholds, and associated weights.
-#'
-#' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
-#'
-#' @return Invisibly returns the input object. Called for its side effect of
-#'   printing the model summary to the console.
-#'
-#' @examples
-#' \dontrun{
-#' model <- gbrs(mpg ~ wt + hp, data = mtcars)
-#' print(model)  # or simply: model
-#' }
-#'
-#' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
-#' @export
-print.gbrs <- function(obj) {
-    print_model_score(obj$weights, obj$formula)
-}
-
 #' Predict Method for GBRS Models
 #'
 #' @description
@@ -320,10 +260,10 @@ print.gbrs <- function(obj) {
 #' during model fitting.
 #'
 #' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
-#' @param df A data frame containing the same predictor variables as used in
+#' @param newdata A data frame containing the same predictor variables as used in
 #'   model fitting. Must include all variables specified in the model formula.
 #'
-#' @return A numeric vector of predictions with length equal to \code{nrow(df)}:
+#' @return A numeric vector of predictions with length equal to \code{nrow(newdata)}:
 #'   \itemize{
 #'     \item For \code{objective = "continuous"}: Predicted continuous values
 #'     \item For \code{objective = "binary"}: Predicted probabilities (0 to 1)
@@ -332,7 +272,6 @@ print.gbrs <- function(obj) {
 #'   }
 #'
 #' @examples
-#' \dontrun{
 #' # Fit model on training data
 #' train_idx <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
 #' train_data <- mtcars[train_idx, ]
@@ -345,12 +284,11 @@ print.gbrs <- function(obj) {
 #'
 #' # Calculate RMSE
 #' rmse <- sqrt(mean((predictions - test_data$mpg)^2))
-#' }
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{print.gbrs}}
 #' @export
-predict.gbrs <- function(obj, df) {
-  data <- process.formula(obj$formula, df)
+predict.gbrs <- function(obj, newdata) {
+  data <- process.formula(obj$formula, newdata)
 
   pred <- switch(obj$objective,
     "continuous" = predict_score(obj$weights, data$x),
@@ -371,4 +309,3 @@ predict_round = function(coeffs, formula, data) {
     yp_r = mat %*% r_coeffs # yp == yp_lm
     yp_r
 }
-

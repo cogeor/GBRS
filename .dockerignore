@@ -2,10 +2,11 @@
 libs/
 .venv/
 build/
-*.tar.gz
-*.so
-*.dll
-*.o
+dist/
+**/*.tar.gz
+**/*.so
+**/*.dll
+**/*.o
 
 # Exclude git and IDE files
 .git/

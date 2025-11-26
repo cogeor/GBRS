@@ -1,13 +1,15 @@
 Package: gbrs
 Title: Gradient Boosted Risk Scores
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
-    person("Costa", "Georgantas", email = "costa@example.com", role = c("aut", "cre"))
-Description: GBRS (gradient boosted risk scoring) is a library that generates risk scores
+    person("Costa", "Georgantas", email = "costa.georgantas@chuv.ch", role = c("aut", "cre"))
+Description: GBRS (gradient boosted risk scoring) is a library that generates risk scores.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
+URL: https://gitlab.com/cgeo/GBRS
+BugReports: https://gitlab.com/cgeo/GBRS/-/issues
 LinkingTo: 
     Rcpp, RcppEigen
 Imports: 

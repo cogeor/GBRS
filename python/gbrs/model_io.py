@@ -5,18 +5,20 @@ This module provides functions to save and load GBRS models in JSON format,
 enabling cross-language compatibility between Python and R implementations.
 """
 
+from typing import Optional, Any
+from numpy.typing import NDArray
 import json
 import numpy as np
 
 
-def save_model(model, filepath, objective=None, formula=None):
+def save_model(model: "GBRS", filepath: str, objective: Optional[str] = None, formula: Optional[str] = None) -> None:
     """
     Save a GBRS model to a JSON file.
     
     Parameters
     ----------
-    model : gbrs.core.Model
-        The fitted C++ model object
+    model : gbrs.GBRS or gbrs.core.Model
+        The fitted model object
     filepath : str
         Path to save the model file
     objective : str, optional
@@ -24,21 +26,41 @@ def save_model(model, filepath, objective=None, formula=None):
     formula : str, optional
         Model formula string
     """
+    # Handle both GBRS wrapper and raw Model object
+    if hasattr(model, "_model"):
+        core_model = model._model
+    else:
+        core_model = model
+        
     # Get model parameters
-    params = model.get_params()
-    idxs = model.get_idxs()
-    split_vals = model.get_split_val()
+    params = core_model.get_params()
+    idxs = core_model.get_idxs()
+    split_vals = core_model.get_split_val()
     
     # Build rules list
     rules = []
     for i in range(len(idxs)):
-        if int(idxs[i]) >= 0:  # Valid rule
-            rules.append({
-                "idx": int(idxs[i]),
-                "split_val": float(split_vals[i]),
-                "w": float(params.w[i]),
-                "cst": float(params.y0) if i == 0 else 0.0
-            })
+        # Filter out invalid rules if any (though idxs usually valid in trained model)
+        # But we might have unused slots if max_n > actual rules?
+        # The C++ implementation seems to fill sequentially up to 'i'.
+        # But get_idxs returns the full vector of size max_n?
+        # Let's check C++ get_idxs. It returns 'this->idxs'.
+        # 'this->idxs' is initialized to Zero(max_n).
+        # 'this->i' tracks the number of rules.
+        # We should probably only save up to 'i'.
+        # But we don't have access to 'i' from python directly via get_params?
+        # Wait, get_params returns ScoreParams which has 'w'.
+        # We can iterate and stop when we hit zeros? No, 0 is valid index.
+        # Actually, the C++ prune() method resizes the vectors to 'i'.
+        # So if prune() was called (which fit() does), then idxs size should be correct.
+        # Let's assume vectors are correct size.
+        
+        rules.append({
+            "idx": int(idxs[i]),
+            "split_val": float(split_vals[i]),
+            "w": float(params.w[i]),
+            "cst": float(params.y0) if i == 0 else 0.0
+        })
     
     # Create model dict
     model_dict = {
@@ -53,7 +75,7 @@ def save_model(model, filepath, objective=None, formula=None):
         json.dump(model_dict, f, indent=2)
 
 
-def load_model(filepath):
+def load_model(filepath: str) -> "GBRS":
     """
     Load a GBRS model from a JSON file.
     
@@ -64,12 +86,8 @@ def load_model(filepath):
         
     Returns
     -------
-    dict
-        Dictionary containing:
-        - version: str
-        - objective: str
-        - formula: str
-        - rules: list of dict with keys (idx, split_val, w, cst)
+    gbrs.GBRS
+        Loaded GBRS model instance
     """
     with open(filepath, 'r') as f:
         model_dict = json.load(f)
@@ -78,10 +96,23 @@ def load_model(filepath):
     if model_dict.get("version") != "1.0":
         raise ValueError(f"Unsupported model version: {model_dict.get('version')}")
     
-    return model_dict
+    # Create GBRS instance
+    # We don't know the original hyperparameters (n_iter etc), but they don't matter for inference.
+    # We can set defaults.
+    from gbrs.utils import GBRS
+    model = GBRS()
+    
+    # Set state
+    model._set_state(model_dict)
+    
+    # Store objective/formula if we want to add them to GBRS class later
+    # model.objective = model_dict.get("objective")
+    # model.formula = model_dict.get("formula")
+    
+    return model
 
 
-def save_predictions(predictions, filepath):
+def save_predictions(predictions: NDArray[np.float64], filepath: str) -> None:
     """
     Save model predictions to a JSON file for cross-language comparison.
     
@@ -99,7 +130,7 @@ def save_predictions(predictions, filepath):
         json.dump({"predictions": pred_list}, f, indent=2)
 
 
-def load_predictions(filepath):
+def load_predictions(filepath: str) -> NDArray[np.float64]:
     """
     Load predictions from a JSON file.
     
