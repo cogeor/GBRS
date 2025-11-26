@@ -59,6 +59,9 @@ RUN pip3 install .
 # Run Pytest Suite (Fast tests only, no slow benchmarks)
 RUN python3 -m pytest tests/test_correctness.py -v -m "not slow" || true
 RUN python3 -m pytest tests/test_convergence.py::test_regression_convergence -v || true
+RUN python3 -m pytest tests/test_model_io.py -v || true
+RUN python3 -m pytest tests/test_survival_python.py -v || true
+RUN python3 -m pytest tests/test_user_quantiles.py -v || true
 
 # Run Integration Test
 RUN python3 tests/test_integration.py
@@ -75,5 +78,6 @@ RUN Rscript tests/test_cross_language.R
 # Run other R tests
 RUN Rscript tests/test_model_io.R
 RUN Rscript tests/test_survival_veteran.R
+RUN Rscript tests/test_user_quantiles.R
 
 

@@ -69,7 +69,7 @@ print_model_score = function(scores, formula) {
 #' Can also generate LaTeX or Markdown tables.
 #'
 #' @param x An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
-#' @param format Character string specifying the output format: "text" (default), "latex", or "md".
+#' @param format Character string specifying the output format: "text" (default), "latex", "md", "latex_h", "md_h", or "ascii_h".
 #' @param ... Additional arguments passed to the specific print method.
 #'
 #' @return Invisibly returns the input object or the formatted string.
@@ -79,6 +79,7 @@ print_model_score = function(scores, formula) {
 #' print(model)          # Text output
 #' print(model, "latex") # LaTeX output
 #' print(model, "md")    # Markdown output
+#' print(model, "latex_h") # Horizontal LaTeX output
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
 #' @export
@@ -87,6 +88,12 @@ print.gbrs <- function(x, format = "text", ...) {
         print.latex(x, ...)
     } else if (format == "md") {
         print.md(x, ...)
+    } else if (format == "latex_h") {
+        print.latex.horizontal(x, ...)
+    } else if (format == "md_h") {
+        print.md.horizontal(x, ...)
+    } else if (format == "ascii_h") {
+        print.ascii.horizontal(x, ...)
     } else {
         print_model_score(x$weights, x$formula)
     }
@@ -241,4 +248,200 @@ print.md <- function(x, ...) {
   cat("\n")
   
   invisible(paste(md_lines, collapse = "\n"))
+}
+
+#' Print GBRS Model as Horizontal LaTeX Table
+#'
+#' @export
+print.latex.horizontal <- function(x, ...) {
+    scores <- x$weights
+    formula <- as.formula(x$formula)
+    terms_obj <- terms(formula)
+    independent_vars <- attr(terms_obj, "term.labels")
+
+    # Calculate max columns needed
+    max_cols <- 0
+    for (i in 1:length(independent_vars)) {
+        if ((i-1) %in% scores$idx) {
+            score_breaks <- get.score.breaks(scores, i)
+            max_cols <- max(max_cols, length(score_breaks$breaks))
+        }
+    }
+
+    # Build column spec: l for variable name, then l for each bin
+    col_spec <- paste0("l", paste(rep("l", max_cols), collapse=""))
+
+    latex_lines <- c(
+        "\\begin{tabular}{"  , col_spec, "}",
+        "\\hline"
+    )
+
+    for (i in 1:length(independent_vars)) {
+        if ((i-1) %in% scores$idx) {
+            score_breaks <- get.score.breaks(scores, i)
+            if (length(score_breaks) > 0) {
+                feature_name <- independent_vars[score_breaks$index]
+                breaks <- score_breaks$breaks
+                weights <- score_breaks$weights
+
+                # Escape LaTeX
+                breaks <- gsub("<", "\\\\ensuremath{<} ", breaks)
+                breaks <- gsub(">=", "\\\\ensuremath{\\\\ge} ", breaks)
+                breaks <- gsub(">", "\\\\ensuremath{>} ", breaks)
+                
+                # Pad with empty strings if fewer than max_cols
+                n_pad <- max_cols - length(breaks)
+                breaks_padded <- c(breaks, rep("", n_pad))
+                weights_padded <- c(weights, rep("", n_pad))
+
+                # Row 1: Variable Name | Thresholds
+                row1 <- paste0(feature_name, " & ", paste(breaks_padded, collapse = " & "), " \\\\")
+                
+                # Row 2: Empty | Scores
+                row2 <- paste0(" & ", paste(weights_padded, collapse = " & "), " \\\\")
+
+                latex_lines <- c(latex_lines, row1, row2)
+            }
+        }
+    }
+    latex_lines <- c(latex_lines, "\\hline", "\\end{tabular}")
+    
+    cat(paste(latex_lines, collapse = "\n"))
+    cat("\n")
+    invisible(paste(latex_lines, collapse = "\n"))
+}
+
+#' Print GBRS Model as Horizontal Markdown Table
+#'
+#' @export
+print.md.horizontal <- function(x, ...) {
+    scores <- x$weights
+    formula <- as.formula(x$formula)
+    terms_obj <- terms(formula)
+    independent_vars <- attr(terms_obj, "term.labels")
+
+    # Calculate max columns needed
+    max_cols <- 0
+    for (i in 1:length(independent_vars)) {
+        if ((i-1) %in% scores$idx) {
+            score_breaks <- get.score.breaks(scores, i)
+            max_cols <- max(max_cols, length(score_breaks$breaks))
+        }
+    }
+
+    # Header
+    header <- paste0("| Variable | ", paste(rep(" | ", max_cols), collapse=""), "|")
+    separator <- paste0("|:---|", paste(rep(":---|", max_cols), collapse=""), "|")
+    
+    md_lines <- c(header, separator)
+
+    for (i in 1:length(independent_vars)) {
+        if ((i-1) %in% scores$idx) {
+            score_breaks <- get.score.breaks(scores, i)
+            if (length(score_breaks) > 0) {
+                feature_name <- independent_vars[score_breaks$index]
+                breaks <- score_breaks$breaks
+                weights <- score_breaks$weights
+
+                # Pad
+                n_pad <- max_cols - length(breaks)
+                breaks_padded <- c(breaks, rep("", n_pad))
+                weights_padded <- c(weights, rep("", n_pad))
+
+                # Row 1: Variable Name | Thresholds
+                row1 <- paste0("| **", feature_name, "** | ", paste(breaks_padded, collapse = " | "), " |")
+                
+                # Row 2: Empty | Scores
+                row2 <- paste0("| | ", paste(weights_padded, collapse = " | "), " |")
+
+                md_lines <- c(md_lines, row1, row2)
+            }
+        }
+    }
+    
+    cat(paste(md_lines, collapse = "\n"))
+    cat("\n")
+    invisible(paste(md_lines, collapse = "\n"))
+}
+
+#' Print GBRS Model as Horizontal ASCII Table
+#'
+#' @export
+print.ascii.horizontal <- function(x, ...) {
+    scores <- x$weights
+    formula <- as.formula(x$formula)
+    terms_obj <- terms(formula)
+    independent_vars <- attr(terms_obj, "term.labels")
+
+    # We need to calculate column widths dynamically
+    # First pass: collect all data
+    rows <- list()
+    for (i in 1:length(independent_vars)) {
+        if ((i-1) %in% scores$idx) {
+            score_breaks <- get.score.breaks(scores, i)
+            if (length(score_breaks) > 0) {
+                rows[[length(rows)+1]] = list(
+                    name = independent_vars[score_breaks$index],
+                    breaks = score_breaks$breaks,
+                    weights = score_breaks$weights
+                )
+            }
+        }
+    }
+
+    if (length(rows) == 0) return()
+
+    max_bins <- max(sapply(rows, function(r) length(r$breaks)))
+    
+    # Calculate width for each column (0 is variable name, 1..max_bins are bins)
+    col_widths <- integer(max_bins + 1)
+    
+    # Variable name width
+    col_widths[1] <- max(sapply(rows, function(r) nchar(r$name)))
+    
+    # Bin widths
+    for (j in 1:max_bins) {
+        w <- 0
+        for (r in rows) {
+            if (length(r$breaks) >= j) {
+                w <- max(w, nchar(r$breaks[j]), nchar(r$weights[j]))
+            }
+        }
+        col_widths[j+1] <- w
+    }
+    
+    # Add padding
+    col_widths <- col_widths + 2 # 1 space padding on each side
+
+    # Print function helper
+    print_row <- function(cols) {
+        line <- ""
+        for (j in 1:length(cols)) {
+            val <- cols[j]
+            width <- col_widths[j]
+            # Left align
+            padded <- paste0(val, paste(rep(" ", width - nchar(val)), collapse=""))
+            line <- paste0(line, padded)
+        }
+        cat(line, "\n")
+    }
+
+    # Print rows
+    for (r in rows) {
+        # Row 1: Name + Breaks
+        cols1 <- c(r$name, r$breaks)
+        # Pad with empty strings if needed
+        if (length(cols1) < length(col_widths)) {
+            cols1 <- c(cols1, rep("", length(col_widths) - length(cols1)))
+        }
+        print_row(cols1)
+        
+        # Row 2: Empty + Weights
+        cols2 <- c("", r$weights)
+        if (length(cols2) < length(col_widths)) {
+            cols2 <- c(cols2, rep("", length(col_widths) - length(cols2)))
+        }
+        print_row(cols2)
+        cat("\n")
+    }
 }

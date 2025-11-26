@@ -9,4 +9,5 @@
 benchmarks
 data
 src/*.o
+*.pyd
 **__pycache__
