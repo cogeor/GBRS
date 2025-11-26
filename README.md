@@ -1,6 +1,6 @@
 # GBRS: Gradient Boosted Risk Scoring
 
-[![pipeline status](https://gitlab.com/cgeo/GBRS/badges/master/pipeline.svg)](https://gitlab.com/cgeo/GBRS/-/commits/master)
+[![pipeline status](https://gitlab.com/cgeo/GBRS/badges/dev/pipeline.svg)](https://gitlab.com/cgeo/GBRS/-/commits/dev)
 ![Python](https://img.shields.io/badge/python-3.7%2B-blue)
 ![R](https://img.shields.io/badge/R-4.0%2B-blue)
 

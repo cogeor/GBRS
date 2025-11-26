@@ -6,3 +6,4 @@ test:
     - docker build -t gbrs .
     - docker run gbrs python3 -m pytest tests/ -v
     - docker run gbrs Rscript tests/test_survival_veteran.R
+    - docker run gbrs Rscript tests/test_user_quantiles.R
