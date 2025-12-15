@@ -4,8 +4,8 @@ import numpy as np
 from gbrs.core import Model
 
 class GBRS:
-    def __init__(self, n_iter: int = 300, lr: float = 0.05, n_quantiles: int = 5, ss_rate: float = 1.0) -> None:
-        self._model = Model(n_iter, lr, n_quantiles, ss_rate)
+    def __init__(self, n_iter: int = 300, lr: float = 0.05, n_quantiles: int = 5, batch_size: int = 0) -> None:
+        self._model = Model(n_iter, lr, n_quantiles, batch_size)
 
     def fit(self, X: NDArray[np.float64], y: NDArray[np.float64], user_quantiles: Optional[list] = None) -> None:
         return self._model.fit(X, y, user_quantiles)
@@ -186,7 +186,10 @@ def get_score_breaks(split_val: NDArray[np.float64], idx_array: NDArray[np.float
         "breaks": breaks
     }
 
-def print_score_table(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
+def print_score_table(score_breaks_dict: Dict[float, Dict[str, Any]], base_score: Optional[float] = None) -> None:
+    if base_score is not None:
+        print(f"Base Score: {base_score:.4f}")
+    
     for idx, result in score_breaks_dict.items():
         if not result or not result.get("breaks"):
             continue
@@ -285,7 +288,13 @@ def print_md_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
         row2 = "| | " + " | ".join(weights_padded) + " |"
         print(row2)
 
-def print_ascii_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
+
+def print_ascii_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]], base_score: Optional[float] = None) -> None:
+    if base_score is not None:
+        print(f"Base Score: {base_score:.4f}")
+        print("-" * 20)
+        print()
+
     rows = []
     for idx, result in score_breaks_dict.items():
         if result and result.get("breaks"):
@@ -312,29 +321,46 @@ def print_ascii_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> No
                 w = max(w, len(r["breaks"][j]), len(r["weights"][j]))
         col_widths[j+1] = w
         
-    # Padding
+    # Padding within the cell
     col_widths = [w + 2 for w in col_widths]
     
-    def print_row(cols):
+    def print_row(cols, is_header=False):
         line = ""
         for j, val in enumerate(cols):
             width = col_widths[j]
-            line += val.ljust(width)
+            # Content padded
+            cell_content = val.ljust(width)
+            if j == 0:
+                line += cell_content
+            else:
+                # Add separator before the column (except first one, which is Name)
+                # But wait, we want separators between cutoffs.
+                # Cutoffs start at index 1.
+                 line += "| " + cell_content
         print(line)
 
-    for r in rows:
-        # Row 1
+    for i, r in enumerate(rows):
+        # Row 1 (Header/Breaks)
         cols1 = [r["name"]] + r["breaks"]
         if len(cols1) < len(col_widths):
             cols1 += [""] * (len(col_widths) - len(cols1))
-        print_row(cols1)
+        print_row(cols1, is_header=True)
         
-        # Row 2
+        # Row 2 (Weights)
         cols2 = [""] + r["weights"]
         if len(cols2) < len(col_widths):
             cols2 += [""] * (len(col_widths) - len(cols2))
         print_row(cols2)
-        print()
+        
+        # Separation between features
+        # Add a light separation (e.g. dashed line) if not the last one
+        if i < len(rows) - 1:
+             # Calculate total length roughly
+             # Sum of widths + number of separators * 2
+             total_len = sum(col_widths) + (len(col_widths) - 1) * 2
+             print("-" * total_len)
+        else:
+             print() # formatting
 
 def build_score_breaks_dict(split_val: NDArray[np.float64], idx: NDArray[np.float64], w: NDArray[np.float64], indices: NDArray[np.float64], feature_names: Optional[Dict[int, str]] = None) -> Dict[float, Dict[str, Any]]:
     """
@@ -386,13 +412,13 @@ def print_model(model: Model, feature_names: Optional[Dict[int, str]] = None, fo
     d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names)
     
     if format == "text":
-        print_score_table(d)
+        print_score_table(d, base_score=params.y0)
     elif format == "latex_h":
         print_latex_horizontal(d)
     elif format == "md_h":
         print_md_horizontal(d)
     elif format == "ascii_h":
-        print_ascii_horizontal(d)
+        print_ascii_horizontal(d, base_score=params.y0)
     else:
         # Fallback to text for now if other formats not implemented or requested
-        print_score_table(d)
+        print_score_table(d, base_score=params.y0)

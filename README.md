@@ -6,12 +6,12 @@
 
 Risk scores are an interpretable, explainable, and actionable class of machine learning models used in clinical settings, insurance, and risk management. Unlike most computational methods, risk scores are designed to be computed by a human by attributing points to a data sample based on a limited set of criteria.
 
-This library provides an algorithm based on gradient boosting that is capable of modeling nonlinear effects, along with a C++ implementation with Python and R bindings.
+This library provides an algorithm based on gradient boosting for generating risk scores, along with a C++ implementation with Python and R bindings.
 
 
 ## Features
 
-- **Interpretability**: Produces a simple points-based score card, optionally with user-defined thresholds.
+- **Interpretability**: Produces a simple points-based score card (see below for example), optionally with user-defined thresholds.
 - **Multi-objective**: Supports regression, binary classification, and survival analysis.
 - **Non-linear effects**: Captures complex relationships through gradient boosting.
 - **Cross-platform**: Works on Linux, macOS, and Windows.
@@ -88,7 +88,7 @@ model.print(feature_names)
 
 ### R
 
-The R API provides a formula-based interface and supports survival analysis.
+The R API provides a formula-based interface
 
 ```R
 library(gbrs)

@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <numeric>
 #include <unordered_map>
 #include <algorithm>
 #include <random>
@@ -16,7 +17,7 @@ double logodds(const VectorXd& grps);
 void convert_logodds_to_p_inplace(VectorXd& p);
 std::unordered_map<int, VectorXd> make_quantiles(const MatrixXd& x, const int n_pts);
 VectorXd quantiles(const VectorXd & v, const int n_quantiles);
-VectorXd subsample_mask(int n, double subsample);
+
 
 struct ScoreParams {
     double y0;
@@ -28,14 +29,13 @@ class Model
 private:
     int max_n;
     double lr;
-    double ss_rate;
+    int batch_size;
     int n_interp;
     int i;
     VectorXd idxs;
     VectorXd split_val;
     MatrixXd iter_out;
     VectorXd mask;
-    VectorXd ss_mask;
     VectorXd l_arr;
     MatrixXd gmat;
     //std::unordered_map<int, Eigen::VectorXd> mean_bins;
@@ -53,23 +53,53 @@ private:
         const VectorXd& u,               
         const VectorXd& gradients,       
         const VectorXd& f,               
-        const VectorXd& E,               
         const VectorXd& T,               
+        const VectorXd& E,               
         const VectorXd& interp_pts);
+    
+    // Helper functions for subsampling
+    std::vector<int> get_batch_indices(int n_samples) const {
+        if (batch_size <= 0 || batch_size >= n_samples) {
+            return {}; // Empty implies full dataset
+        }
+        std::vector<int> indices(n_samples);
+        std::iota(indices.begin(), indices.end(), 0);
+        std::shuffle(indices.begin(), indices.end(), std::mt19937{std::random_device{}()});
+        indices.resize(batch_size);
+        return indices;
+    }
+
+    MatrixXd slice_matrix(const MatrixXd& m, const std::vector<int>& idxs) const {
+        if (idxs.empty()) return m; // Should not happen with current logic but safe check
+        MatrixXd sub(idxs.size(), m.cols());
+        for (size_t i = 0; i < idxs.size(); ++i) {
+            sub.row(i) = m.row(idxs[i]);
+        }
+        return sub;
+    }
+
+    VectorXd slice_vector(const VectorXd& v, const std::vector<int>& idxs) const {
+        if (idxs.empty()) return v;
+        VectorXd sub(idxs.size());
+        for (size_t i = 0; i < idxs.size(); ++i) {
+            sub[i] = v[idxs[i]];
+        }
+        return sub;
+    }
+
 public:
     //std::map<int, VectorXd> qts;
     ScoreParams params;
     VectorXd w1;
     VectorXd w2;
-    Model(int nrow, int ncol, int max_n, double lr, int n_pts, double ss_rate)
+    Model(int nrow, int ncol, int max_n, double lr, int n_pts, int batch_size)
     : max_n(max_n)
     , iter_out(MatrixXd(nrow, 4))
     , mask(VectorXd(nrow))
     , l_arr(VectorXd(n_pts))
-    , ss_mask(VectorXd(n_pts))
     , gmat(MatrixXd(n_pts, 2))
     , lr(lr)
-    , ss_rate(ss_rate)
+    , batch_size(batch_size)
     , idxs(VectorXd::Zero(max_n))
     , split_val(VectorXd::Zero(max_n))
     , w1(VectorXd::Zero(max_n))
@@ -454,12 +484,7 @@ std::array<double, 4> Model::get_best_split(const VectorXd& u, const VectorXd& y
         gmat(i, 0) = g_tmp[0]; 
         gmat(i, 1) = g_tmp[1]; 
         set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
-        if (ss_rate < 0) {
-            l_arr[i] = l2_norm_mask(new_preds, y, this->ss_mask);
-        }
-        else {
-            l_arr[i] = l2_norm(new_preds, y);
-        }
+        l_arr[i] = l2_norm(new_preds, y);
     }
     int idx = 0;
     out[0] = l_arr.minCoeff(&idx);
@@ -485,11 +510,7 @@ std::array<double, 4> Model::get_best_split_proba(const VectorXd& u, const Vecto
         new_preds = preds;
         weight_groups_inplace(new_preds, mask, lr * gmat(i, 0), lr * gmat(i, 1));
         convert_logodds_to_p_inplace(new_preds);
-        if (ss_rate < 0) {
-            l_arr[i] = cross_entropy_norm_mask(new_preds, y, this->ss_mask);
-        } else {
-            l_arr[i] = cross_entropy_norm(new_preds, y);
-        }
+        l_arr[i] = cross_entropy_norm(new_preds, y);
         //printf("l %f m %f \n", l_arr[i], mask.sum());
     }
     out[0] = l_arr.minCoeff(&idx);
@@ -524,13 +545,7 @@ std::array<double, 4> Model::get_best_split_survival(
         set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
         new_preds += f;
 
-        if (ss_rate < 0) {
-            //l_arr[i] = cox_partial_ll_loss(new_preds, T, E, this->ss_mask);
-            l_arr[i] = ranking_loss(new_preds, T, E, this->ss_mask);
-        } else {
-            //l_arr[i] = cox_partial_ll_loss(new_preds, T, E, VectorXd::Ones(E.size()));  
-            l_arr[i] = ranking_loss(new_preds, T, E, VectorXd::Ones(E.size()));  
-        }
+        l_arr[i] = ranking_loss(new_preds, T, E, VectorXd::Ones(E.size()));
     }
 
     int idx = 0;
@@ -674,12 +689,26 @@ void Model::add_elem(const int idx, const double sv, const double w1, const doub
 
 void Model::iter(const MatrixXd& x, const VectorXd& y, const std::unordered_map<int, VectorXd>& qtsw)
 {
-    if (ss_rate < 1) {
-        this->ss_mask = subsample_mask(y.size(), this->ss_rate);
+    std::vector<int> indices = get_batch_indices(y.size());
+    MatrixXd x_sub;
+    VectorXd y_sub;
+    const MatrixXd* x_ptr = &x; 
+    const VectorXd* y_ptr = &y;
+
+    if (!indices.empty()) {
+        x_sub.resize(x.rows(), indices.size());
+        y_sub.resize(indices.size());
+        for(size_t k = 0; k < indices.size(); ++k) {
+            x_sub.col(k) = x.col(indices[k]);
+            y_sub[k] = y[indices[k]];
+        }
+        x_ptr = &x_sub;
+        y_ptr = &y_sub;
     }
-    #pragma omp parallel for shared(x, y, qtsw) schedule(dynamic)
-    for (int i = 0; i < x.rows(); i++) {
-        std::array<double, 4> out_tmp = this->get_best_split(x.row(i), y, qtsw.at(i));
+
+    #pragma omp parallel for shared(x_ptr, y_ptr, qtsw) schedule(dynamic)
+    for (int i = 0; i < x_ptr->rows(); i++) {
+        std::array<double, 4> out_tmp = this->get_best_split(x_ptr->row(i), *y_ptr, qtsw.at(i));
         this->iter_out(i, 0) = out_tmp[0];
         this->iter_out(i, 1) = out_tmp[1];
         this->iter_out(i, 2) = out_tmp[2];
@@ -692,12 +721,30 @@ void Model::iter(const MatrixXd& x, const VectorXd& y, const std::unordered_map<
 
 void Model::iter_proba(const MatrixXd& x, const VectorXd& preds, const VectorXd& y, const std::unordered_map<int, VectorXd>& qtsw)
 {
-    if (ss_rate < 1) {
-        this->ss_mask = subsample_mask(y.size(), this->ss_rate);
+    std::vector<int> indices = get_batch_indices(y.size());
+    MatrixXd x_sub;
+    VectorXd y_sub, preds_sub;
+    const MatrixXd* x_ptr = &x;
+    const VectorXd* y_ptr = &y;
+    const VectorXd* preds_ptr = &preds;
+
+    if (!indices.empty()) {
+        x_sub.resize(x.rows(), indices.size());
+        y_sub.resize(indices.size());
+        preds_sub.resize(indices.size());
+        for(size_t k = 0; k < indices.size(); ++k) {
+            x_sub.col(k) = x.col(indices[k]);
+            y_sub[k] = y[indices[k]];
+            preds_sub[k] = preds[indices[k]];
+        }
+        x_ptr = &x_sub;
+        y_ptr = &y_sub;
+        preds_ptr = &preds_sub;
     }
-    #pragma omp parallel for shared(x, preds, y, qtsw) schedule(dynamic)
-    for (int i = 0; i < x.rows(); i++) {
-        std::array<double, 4> out_tmp = get_best_split_proba(x.row(i), preds, y, qtsw.at(i));
+
+    #pragma omp parallel for shared(x_ptr, preds_ptr, y_ptr, qtsw) schedule(dynamic)
+    for (int i = 0; i < x_ptr->rows(); i++) {
+        std::array<double, 4> out_tmp = get_best_split_proba(x_ptr->row(i), *preds_ptr, *y_ptr, qtsw.at(i));
         iter_out(i, 0) = out_tmp[0];
         iter_out(i, 1) = out_tmp[1];
         iter_out(i, 2) = out_tmp[2];
@@ -716,22 +763,43 @@ void Model::iter_survival(const Eigen::MatrixXd& x,
                           const Eigen::VectorXd& f) {
     //std::array<double, 4> out_tmp;
 
-    if (ss_rate < 1.0) {
-        this->ss_mask = subsample_mask(T.size(), this->ss_rate);
+    std::vector<int> indices = get_batch_indices(T.size());
+    MatrixXd x_sub;
+    VectorXd T_sub, E_sub, f_sub;
+    const MatrixXd* x_ptr = &x;
+    const VectorXd* T_ptr = &T;
+    const VectorXd* E_ptr = &E;
+    const VectorXd* f_ptr = &f;
+
+    if (!indices.empty()) {
+        x_sub.resize(x.rows(), indices.size());
+        T_sub.resize(indices.size());
+        E_sub.resize(indices.size());
+        f_sub.resize(indices.size());
+        for(size_t k = 0; k < indices.size(); ++k) {
+            x_sub.col(k) = x.col(indices[k]);
+            T_sub[k] = T[indices[k]];
+            E_sub[k] = E[indices[k]];
+            f_sub[k] = f[indices[k]];
+        }
+        x_ptr = &x_sub;
+        T_ptr = &T_sub;
+        E_ptr = &E_sub;
+        f_ptr = &f_sub;
     }
 
     // Compute gradients for Cox loss
     //const Eigen::VectorXd gradients = compute_cox_gradients(f, T, E);
-    const Eigen::VectorXd gradients = compute_ranking_gradients(f, T, E, VectorXd::Ones(T.size()));
-    #pragma omp parallel for shared(x, gradients, f, T, E, qtsw) default(none) schedule(dynamic)
-    for (Eigen::Index i = 0; i < x.rows(); ++i) {
+    const Eigen::VectorXd gradients = compute_ranking_gradients(*f_ptr, *T_ptr, *E_ptr, VectorXd::Ones(T_ptr->size()));
+    #pragma omp parallel for shared(x_ptr, gradients, f_ptr, T_ptr, E_ptr, qtsw) default(none) schedule(dynamic)
+    for (Eigen::Index i = 0; i < x_ptr->rows(); ++i) {
         // Find best split for this feature using survival objective
         std::array<double, 4> out_tmp = this->get_best_split_survival(
-            x.row(i),        // current feature's values
+            x_ptr->row(i),        // current feature's values
             gradients,
-            f,
-            T,
-            E,
+            *f_ptr,
+            *T_ptr,
+            *E_ptr,
             qtsw.at(i)
         );
 
@@ -864,17 +932,7 @@ double sum_p_complement(VectorXd& p) {
     return s;
 }
 
-VectorXd subsample_mask(int n, double subsample)
-{
-    int n_ones = n * subsample;
-    std::vector<double> mask(n, 0);
-    std::fill(mask.begin(), mask.begin()+ n_ones, 1);
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(mask.begin(), mask.end(), g);
-    VectorXd eig_mask = Eigen::Map<VectorXd>(mask.data(), mask.size());
-    return eig_mask;
-}
+
 
 void Model::prune() {
     std::map<std::pair<int, double>, std::tuple<double, double, double>> merged;

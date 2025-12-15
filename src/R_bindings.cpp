@@ -63,20 +63,20 @@ build_quantile_map(const MatrixXd& m,
 }
 
 // [[Rcpp::export]]
-DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate)
+DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, int batch_size)
 {
     MatrixXd m = as<MatrixXd>(x).transpose(); // TODO: can we avoid this copy?
     VectorXd yv = as<VectorXd>(y); // TODO: we can also avoid this copy
     double lo = logodds(yv);
     const std::unordered_map<int, VectorXd> qts = make_quantiles(m, n_quantiles);
-    Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, ss_rate);
+    Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, batch_size);
     model.params.y0 = lo;
     model.fit_proba(m, yv, qts);
     return export_score(model);
 }
 
 // [[Rcpp::export]]
-DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate)
+DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, int batch_size)
 {
     auto t1 = std::chrono::high_resolution_clock::now();
     MatrixXd m = as<MatrixXd>(x).transpose(); // TODO: can we avoid this copy?
@@ -84,7 +84,7 @@ DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_qua
 
     auto t2 = std::chrono::high_resolution_clock::now();
     const std::unordered_map<int, VectorXd> qts = make_quantiles(m, n_quantiles);
-    Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, ss_rate);
+    Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, batch_size);
     model.fit(m, yv, qts);
 
     auto t3 = std::chrono::high_resolution_clock::now();
@@ -101,7 +101,7 @@ DataFrame fit_survival(NumericMatrix x,
                        int n_iter,
                        double lr,
                        int n_quantiles,
-                       double ss_rate,
+                       int batch_size,
                        Rcpp::Nullable<Rcpp::List> quantiles) {
     using namespace std::chrono;
 
@@ -116,7 +116,7 @@ DataFrame fit_survival(NumericMatrix x,
     const auto qts = build_quantile_map(m, n_quantiles, quantiles);
 
     // Create and fit model
-    Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, ss_rate);
+    Model model(m.rows(), m.cols(), n_iter, lr, n_quantiles, batch_size);
 
     const auto start_fit = high_resolution_clock::now();
     model.fit_survival(m, T, E, qts);

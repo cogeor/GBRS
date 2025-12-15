@@ -203,7 +203,7 @@ convert.weights.score = function(w) {
 #'
 #' @seealso \code{\link{predict.gbrs}}, \code{\link{print.gbrs}}
 #' @export
-gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate = 1, objective = "auto", user_quantiles = NULL) {
+gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, batch_size = 0, objective = "auto", user_quantiles = NULL) {
   formula <- as.formula(formula)
   data <- process.formula(formula, data)
 
@@ -240,9 +240,9 @@ gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, ss_rate
 
   # Fit model based on type
   weights <- switch(objective,
-    "continuous" = fit(data$x, data$y, n_max, lr, n_quantiles, ss_rate),
-    "binary"     = fit_proba(data$x, data$y, n_max, lr, n_quantiles, ss_rate),
-    "survival"   = fit_survival(data$x, data$time, data$event, n_max, lr, n_quantiles, ss_rate, user_quantiles),
+    "continuous" = fit(data$x, data$y, n_max, lr, n_quantiles, batch_size),
+    "binary"     = fit_proba(data$x, data$y, n_max, lr, n_quantiles, batch_size),
+    "survival"   = fit_survival(data$x, data$time, data$event, n_max, lr, n_quantiles, batch_size, user_quantiles),
     stop("Unknown objective: must be 'continuous', 'binary', or 'survival'")
   )
 

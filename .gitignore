@@ -1,7 +1,7 @@
 /dev
 /build
 /dist
-/scripts
+
 *.egg-info
 *.so
 *.tar.gz
@@ -11,3 +11,5 @@ data
 src/*.o
 *.pyd
 **__pycache__
+.artifacts
+.venv

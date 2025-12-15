@@ -386,6 +386,13 @@ print.ascii.horizontal <- function(x, ...) {
     terms_obj <- terms(formula)
     independent_vars <- attr(terms_obj, "term.labels")
 
+    # Add Base Score
+    if ("cst" %in% names(scores)) {
+        base_score <- sum(scores$cst) 
+        cat(sprintf("Base Score: %.4f\n", base_score))
+        cat(paste(rep("-", 20), collapse=""), "\n\n")
+    }
+
     # We need to calculate column widths dynamically
     # First pass: collect all data
     rows <- list()
@@ -434,13 +441,19 @@ print.ascii.horizontal <- function(x, ...) {
             width <- col_widths[j]
             # Left align
             padded <- paste0(val, paste(rep(" ", width - nchar(val)), collapse=""))
-            line <- paste0(line, padded)
+            
+            if (j == 1) {
+                line <- paste0(line, padded)
+            } else {
+                line <- paste0(line, "| ", padded)
+            }
         }
         cat(line, "\n")
     }
 
     # Print rows
-    for (r in rows) {
+    for (i in 1:length(rows)) {
+        r <- rows[[i]]
         # Row 1: Name + Breaks
         cols1 <- c(r$name, r$breaks)
         # Pad with empty strings if needed
@@ -455,6 +468,13 @@ print.ascii.horizontal <- function(x, ...) {
             cols2 <- c(cols2, rep("", length(col_widths) - length(cols2)))
         }
         print_row(cols2)
-        cat("\n")
+        
+        # Separation
+        if (i < length(rows)) {
+             total_len <- sum(col_widths) + (length(col_widths)-1)*2
+             cat(paste(rep("-", total_len), collapse=""), "\n")
+        } else {
+             cat("\n")
+        }
     }
 }

@@ -43,26 +43,26 @@ build_quantile_map(const Eigen::MatrixXd& m,
 
 class PyModel {
 public:
-    PyModel(int n_iter, double lr, int n_quantiles, double ss_rate)
-        : n_iter(n_iter), lr(lr), n_quantiles(n_quantiles), ss_rate(ss_rate) {}
+    PyModel(int n_iter, double lr, int n_quantiles, int batch_size)
+        : n_iter(n_iter), lr(lr), n_quantiles(n_quantiles), batch_size(batch_size) {}
 
     void fit(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, py::object user_quantiles = py::none()) {
         auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
-        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, ss_rate);
+        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, batch_size);
         model->fit(X.transpose(), y, qts);
     }
 
     void fit_proba(const Eigen::MatrixXd& X, const Eigen::VectorXd& y, py::object user_quantiles = py::none()) {
         double y0 = logodds(y);
         auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
-        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, ss_rate);
+        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, batch_size);
         model->params.y0 = y0;
         model->fit_proba(X.transpose(), y, qts);
     }
 
     void fit_survival(const Eigen::MatrixXd& X, const Eigen::VectorXd& time, const Eigen::VectorXd& event, py::object user_quantiles = py::none()) {
         auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
-        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, ss_rate);
+        model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles, batch_size);
         model->fit_survival(X.transpose(), time, event, qts);
     }
 
@@ -97,7 +97,7 @@ private:
     int n_iter;
     double lr;
     int n_quantiles;
-    double ss_rate;
+    int batch_size;
     std::unique_ptr<Model> model;
 };
 
@@ -107,11 +107,11 @@ PYBIND11_MODULE(core, m) {
         .def_readwrite("w", &ScoreParams::w);
 
     py::class_<PyModel>(m, "Model")
-        .def(py::init<int, double, int, double>(),
+        .def(py::init<int, double, int, int>(),
              py::arg("n_iter"),
              py::arg("lr"),
              py::arg("n_quantiles"),
-             py::arg("ss_rate"))
+             py::arg("batch_size"))
         .def("fit", &PyModel::fit,
              py::arg("X"),
              py::arg("y"),
