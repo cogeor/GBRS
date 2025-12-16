@@ -45,7 +45,11 @@ RUN pip3 install --no-cache-dir \
     setuptools \
     wheel \
     pytest \
-    pytest-cov
+    pytest-cov \
+    black \
+    flake8 \
+    mypy \
+    isort
 
 # Install R dependencies
 # R dependencies installed via apt-get

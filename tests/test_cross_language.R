@@ -13,7 +13,12 @@ test_cross_language_r_part <- function() {
   
   # Load test data from Python
   cat("\n1. Loading test data from Python...\n")
-  test_data <- read_json("test_data.json", simplifyVector = TRUE)
+  data_dir <- file.path("tests", "data")
+  if (!dir.exists(data_dir)) {
+    dir.create(data_dir, recursive = TRUE)
+  }
+  
+  test_data <- read_json(file.path(data_dir, "test_data.json"), simplifyVector = TRUE)
   X <- test_data$X
   y <- test_data$y
   cat(sprintf("   Dataset: %d samples, %d features\n", nrow(X), ncol(X)))
@@ -28,14 +33,14 @@ test_cross_language_r_part <- function() {
   # Make predictions
   cat("\n3. Generating R predictions...\n")
   predictions_r <- predict(model_r, df)
-  save_predictions(predictions_r, "predictions_r_test.json")
+  save_predictions(predictions_r, file.path(data_dir, "predictions_r_test.json"))
   cat(sprintf("   ✓ Predictions saved: %d values\n", length(predictions_r)))
   cat(sprintf("   Mean prediction: %.4f\n", mean(predictions_r)))
   cat(sprintf("   Std prediction: %.4f\n", sd(predictions_r)))
   
   # Load Python predictions for comparison
   cat("\n4. Loading Python predictions for comparison...\n")
-  predictions_py <- load_predictions("predictions_python_test.json")
+  predictions_py <- load_predictions(file.path(data_dir, "predictions_python_test.json"))
   
   # Compare predictions
   cat("\n5. Comparing predictions...\n")

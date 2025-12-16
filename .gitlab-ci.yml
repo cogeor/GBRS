@@ -7,3 +7,6 @@ test:
     - docker run gbrs python3 -m pytest tests/ -v
     - docker run gbrs Rscript tests/test_survival_veteran.R
     - docker run gbrs Rscript tests/test_user_quantiles.R
+    - docker run gbrs black --check .
+    - docker run gbrs flake8 .
+    - docker run gbrs mypy .

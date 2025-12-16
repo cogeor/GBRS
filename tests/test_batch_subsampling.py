@@ -1,7 +1,7 @@
-
 import numpy as np
-import pytest
+
 from gbrs import GBRS
+
 
 def test_batch_subsampling_runs():
     # Synthetic data
@@ -29,7 +29,7 @@ def test_batch_subsampling_runs():
     print("Testing Classification with batch_size=50")
     model_bin = GBRS(n_iter=10, batch_size=50)
     model_bin.fit_proba(X, y_bin)
-    preds_bin = model_bin.predict_proba(X) # predict_proba for probabilities
+    preds_bin = model_bin.predict_proba(X)  # predict_proba for probabilities
     assert preds_bin.shape == (N,)
     assert not np.isnan(preds_bin).any()
 
@@ -37,11 +37,12 @@ def test_batch_subsampling_runs():
     print("Testing Survival with batch_size=50")
     model_surv = GBRS(n_iter=10, batch_size=50)
     model_surv.fit_survival(X, time, event)
-    preds_surv = model_surv.predict(X) # Survival returns risk scores via predict()
+    preds_surv = model_surv.predict(X)  # Survival returns risk scores via predict()
     assert preds_surv.shape == (N,)
     assert not np.isnan(preds_surv).any()
 
     print("All batch tests passed!")
+
 
 if __name__ == "__main__":
     test_batch_subsampling_runs()
