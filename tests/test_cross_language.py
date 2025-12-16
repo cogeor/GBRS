@@ -55,7 +55,9 @@ def test_cross_language_predictions():
     # Make and save predictions
     print("\n4. Generating Python predictions...")
     predictions_py = model.predict(X)
-    save_predictions(predictions_py, os.path.join(DATA_DIR, "predictions_python_test.json"))
+    save_predictions(
+        predictions_py, os.path.join(DATA_DIR, "predictions_python_test.json")
+    )
     print(f"   ✓ Predictions saved: {len(predictions_py)} values")
     print(f"   Mean prediction: {np.mean(predictions_py):.4f}")
     print(f"   Std prediction: {np.std(predictions_py):.4f}")

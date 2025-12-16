@@ -1,6 +1,7 @@
 """
 Test model import/export functionality
 """
+
 import os
 import numpy as np
 import pytest
@@ -46,7 +47,9 @@ def test_python_save_load():
     print(f"✓ Predictions saved: {len(predictions)} values")
 
     # Load predictions
-    loaded_preds_json = load_predictions(os.path.join(DATA_DIR, "predictions_python.json"))
+    loaded_preds_json = load_predictions(
+        os.path.join(DATA_DIR, "predictions_python.json")
+    )
     print(f"✓ Predictions loaded: {len(loaded_preds_json)} values")
 
     # Verify predictions match

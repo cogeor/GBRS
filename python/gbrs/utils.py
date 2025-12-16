@@ -13,6 +13,7 @@ class GBRS:
         batch_size: int = 0,
     ) -> None:
         self._model = Model(n_iter, lr, n_quantiles, batch_size)
+        self.objective: Optional[str] = None
 
     def fit(
         self,
@@ -20,6 +21,7 @@ class GBRS:
         y: NDArray[np.float64],
         user_quantiles: Optional[List[float]] = None,
     ) -> None:
+        self.objective = "continuous"
         self._model.fit(X, y, user_quantiles)
 
     def predict(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -31,6 +33,7 @@ class GBRS:
         y: NDArray[np.float64],
         user_quantiles: Optional[List[float]] = None,
     ) -> None:
+        self.objective = "binary"
         self._model.fit_proba(X, y, user_quantiles)
 
     def predict_proba(self, X: NDArray[np.float64]) -> NDArray[np.float64]:
@@ -44,6 +47,7 @@ class GBRS:
         user_quantiles: Optional[List[float]] = None,
     ) -> None:
         """Fit the model for survival analysis."""
+        self.objective = "survival"
         self._model.fit_survival(X, time, event, user_quantiles)
 
     def print(
@@ -59,7 +63,7 @@ class GBRS:
         format : str, optional
             Output format: "text" (default), "latex", "md", "latex_h", "md_h", "ascii_h".
         """
-        print_model(self._model, feature_names, format)
+        print_model(self._model, feature_names, format, objective=self.objective)
 
     def print_vertical(self, feature_names: Optional[Dict[int, str]] = None) -> None:
         """
@@ -216,7 +220,7 @@ def get_score_breaks(
         breaks.append(f"[{splits_fmt[i-1]},{splits_fmt[i]})")
     breaks.append(f">={splits_fmt[-1]}")
 
-    return {"index": idx, "weights": weights_fmt, "breaks": breaks}
+    return {"index": idx, "weights": weights_fmt, "breaks": breaks, "splits_raw": vals_split}
 
 
 def print_score_table(
@@ -295,6 +299,79 @@ def print_latex_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> No
 
     print("\\hline")
     print("\\end{tabular}")
+
+
+def print_latex_vertical(
+    score_breaks_dict: Dict[float, Dict[str, Any]], base_score: Optional[float] = None
+) -> None:
+    if base_score is not None:
+        print(f"Base Score: {base_score:.4f} \\\\")
+        print()
+
+    print("\\begin{table}[h!]")
+    print("\\centering")
+    print("\\begin{tabular}{llc}")
+    print("\\hline")
+    print("\\textbf{Variable} & \\textbf{Category} & \\textbf{Points} \\\\")
+    print("\\hline")
+
+    for idx, result in score_breaks_dict.items():
+        if not result or not result.get("breaks"):
+            continue
+
+        name = result.get("feature_name") or result.get("name") or f"F {int(idx)}"
+        # LaTeX escape
+        name = name.replace("_", "\\_")
+
+        breaks = result["breaks"]
+        weights = result["weights"]
+
+        # Escape breaks
+        breaks = [
+            b.replace("<", "$<$")
+            .replace(">=", "$\\ge$")
+            .replace(">", "$>$")
+            .replace("[", "[")
+            .replace(")", ")")
+            for b in breaks
+        ]
+
+        # First row includes variable name
+        print(f"\\textbf{{{name}}} & {breaks[0]} & {weights[0]} \\\\")
+        
+        # Subsequent rows
+        for i in range(1, len(breaks)):
+            print(f" & {breaks[i]} & {weights[i]} \\\\")
+            
+        print("\\hline")
+
+    print("\\end{tabular}")
+    print("\\end{table}")
+
+
+def print_md_vertical(
+    score_breaks_dict: Dict[float, Dict[str, Any]], base_score: Optional[float] = None
+) -> None:
+    if base_score is not None:
+        print(f"**Base Score:** {base_score:.4f}\n")
+
+    print("| Variable | Category | Points |")
+    print("|:---|:---:|---:|")
+
+    for idx, result in score_breaks_dict.items():
+        if not result or not result.get("breaks"):
+            continue
+
+        name = result.get("feature_name") or result.get("name") or f"F {int(idx)}"
+        breaks = result["breaks"]
+        weights = result["weights"]
+
+        # First row
+        print(f"| **{name}** | {breaks[0]} | {weights[0]} |")
+        
+        # Subsequent rows
+        for i in range(1, len(breaks)):
+            print(f"| | {breaks[i]} | {weights[i]} |")
 
 
 def print_md_horizontal(score_breaks_dict: Dict[float, Dict[str, Any]]) -> None:
@@ -448,6 +525,7 @@ def print_model(
     model: Model,
     feature_names: Optional[Dict[int, str]] = None,
     format: str = "ascii_h",
+    objective: Optional[str] = None,
 ) -> None:
     """
     Print the model score table.
@@ -456,6 +534,7 @@ def print_model(
         model: The model object (C++ wrapper).
         feature_names (dict, optional): Mapping from index to feature name.
         format: Output format ("text", "latex", "md", "latex_h", "md_h", "ascii_h")
+        objective: Model objective ("continuous", "binary", "survival")
     """
     params = model.get_params()
     idxs = model.get_idxs()
@@ -472,14 +551,22 @@ def print_model(
 
     d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names)
 
+    base_score_val = params.y0
+    if objective == "survival":
+        base_score_val = None
+
     if format == "text":
-        print_score_table(d, base_score=params.y0)
+        print_score_table(d, base_score=base_score_val)
     elif format == "latex_h":
         print_latex_horizontal(d)
+    elif format == "latex":
+        print_latex_vertical(d, base_score=base_score_val)
     elif format == "md_h":
         print_md_horizontal(d)
+    elif format == "md":
+        print_md_vertical(d, base_score=base_score_val)
     elif format == "ascii_h":
-        print_ascii_horizontal(d, base_score=params.y0)
+        print_ascii_horizontal(d, base_score=base_score_val)
     else:
         # Fallback to text for now if other formats not implemented or requested
-        print_score_table(d, base_score=params.y0)
+        print_score_table(d, base_score=base_score_val)
