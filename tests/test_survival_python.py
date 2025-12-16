@@ -80,7 +80,7 @@ def test_survival_breast_cancer():
     
     # Fit GBRS survival model with optimized hyperparameters
     print("Fitting GBRS survival model...")
-    model = GBRS(n_iter=50, lr=0.05, n_quantiles=10, ss_rate=1.0)
+    model = GBRS(n_iter=50, lr=0.05, n_quantiles=10)
     model.fit_survival(X_train, time_train, event_train)
     print("Model fitted successfully!\n")
     

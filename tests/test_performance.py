@@ -49,7 +49,7 @@ def test_regression_performance(n_samples, n_features, n_iter):
     """Benchmark regression model performance."""
     X, y = generate_regression_data(n_samples, n_features)
     
-    model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10, ss_rate=1.0)
+    model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10)
     
     start_time = time.time()
     model.fit(X, y)
@@ -77,7 +77,7 @@ def test_classification_performance(n_samples, n_features, n_iter):
     """Benchmark classification model performance."""
     X, y = generate_classification_data(n_samples, n_features)
     
-    model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10, ss_rate=1.0)
+    model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10)
     
     start_time = time.time()
     model.fit_proba(X, y)
@@ -104,7 +104,7 @@ def test_survival_performance(n_samples, n_features, n_iter):
     """Benchmark survival model performance."""
     X, survival_times, event = generate_survival_data(n_samples, n_features)
     
-    model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=5, ss_rate=1.0)
+    model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=5)
     
     start_time = time.time()
     model._model.fit_survival(X, survival_times, event)

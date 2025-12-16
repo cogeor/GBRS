@@ -4,90 +4,115 @@
 #ifndef RCPP_gbrs_RCPPEXPORTS_H_GEN_
 #define RCPP_gbrs_RCPPEXPORTS_H_GEN_
 
-#include <RcppEigen.h>
 #include <Rcpp.h>
+#include <RcppEigen.h>
+
 
 namespace gbrs {
 
-    using namespace Rcpp;
+using namespace Rcpp;
 
-    namespace {
-        void validateSignature(const char* sig) {
-            Rcpp::Function require = Rcpp::Environment::base_env()["require"];
-            require("gbrs", Rcpp::Named("quietly") = true);
-            typedef int(*Ptr_validate)(const char*);
-            static Ptr_validate p_validate = (Ptr_validate)
-                R_GetCCallable("gbrs", "_gbrs_RcppExport_validate");
-            if (!p_validate(sig)) {
-                throw Rcpp::function_not_exported(
-                    "C++ function with signature '" + std::string(sig) + "' not found in gbrs");
-            }
-        }
-    }
-
-    inline DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate) {
-        typedef SEXP(*Ptr_fit_proba)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
-        static Ptr_fit_proba p_fit_proba = NULL;
-        if (p_fit_proba == NULL) {
-            validateSignature("DataFrame(*fit_proba)(NumericVector,NumericVector,int,double,int,double)");
-            p_fit_proba = (Ptr_fit_proba)R_GetCCallable("gbrs", "_gbrs_fit_proba");
-        }
-        RObject rcpp_result_gen;
-        {
-            RNGScope RCPP_rngScope_gen;
-            rcpp_result_gen = p_fit_proba(Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(y)), Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)), Shield<SEXP>(Rcpp::wrap(n_quantiles)), Shield<SEXP>(Rcpp::wrap(ss_rate)));
-        }
-        if (rcpp_result_gen.inherits("interrupted-error"))
-            throw Rcpp::internal::InterruptedException();
-        if (Rcpp::internal::isLongjumpSentinel(rcpp_result_gen))
-            throw Rcpp::LongjumpException(rcpp_result_gen);
-        if (rcpp_result_gen.inherits("try-error"))
-            throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
-        return Rcpp::as<DataFrame >(rcpp_result_gen);
-    }
-
-    inline DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate) {
-        typedef SEXP(*Ptr_fit)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
-        static Ptr_fit p_fit = NULL;
-        if (p_fit == NULL) {
-            validateSignature("DataFrame(*fit)(NumericVector,NumericVector,int,double,int,double)");
-            p_fit = (Ptr_fit)R_GetCCallable("gbrs", "_gbrs_fit");
-        }
-        RObject rcpp_result_gen;
-        {
-            RNGScope RCPP_rngScope_gen;
-            rcpp_result_gen = p_fit(Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(y)), Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)), Shield<SEXP>(Rcpp::wrap(n_quantiles)), Shield<SEXP>(Rcpp::wrap(ss_rate)));
-        }
-        if (rcpp_result_gen.inherits("interrupted-error"))
-            throw Rcpp::internal::InterruptedException();
-        if (Rcpp::internal::isLongjumpSentinel(rcpp_result_gen))
-            throw Rcpp::LongjumpException(rcpp_result_gen);
-        if (rcpp_result_gen.inherits("try-error"))
-            throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
-        return Rcpp::as<DataFrame >(rcpp_result_gen);
-    }
-
-    inline DataFrame fit_survival(NumericMatrix x, NumericVector time, NumericVector event, int n_iter, double lr, int n_quantiles, double ss_rate, Rcpp::Nullable<Rcpp::List> quantiles) {
-        typedef SEXP(*Ptr_fit_survival)(SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP,SEXP);
-        static Ptr_fit_survival p_fit_survival = NULL;
-        if (p_fit_survival == NULL) {
-            validateSignature("DataFrame(*fit_survival)(NumericMatrix,NumericVector,NumericVector,int,double,int,double,Rcpp::Nullable<Rcpp::List>)");
-            p_fit_survival = (Ptr_fit_survival)R_GetCCallable("gbrs", "_gbrs_fit_survival");
-        }
-        RObject rcpp_result_gen;
-        {
-            RNGScope RCPP_rngScope_gen;
-            rcpp_result_gen = p_fit_survival(Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(time)), Shield<SEXP>(Rcpp::wrap(event)), Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)), Shield<SEXP>(Rcpp::wrap(n_quantiles)), Shield<SEXP>(Rcpp::wrap(ss_rate)), Shield<SEXP>(Rcpp::wrap(quantiles)));
-        }
-        if (rcpp_result_gen.inherits("interrupted-error"))
-            throw Rcpp::internal::InterruptedException();
-        if (Rcpp::internal::isLongjumpSentinel(rcpp_result_gen))
-            throw Rcpp::LongjumpException(rcpp_result_gen);
-        if (rcpp_result_gen.inherits("try-error"))
-            throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
-        return Rcpp::as<DataFrame >(rcpp_result_gen);
-    }
-
+namespace {
+void validateSignature(const char *sig) {
+  Rcpp::Function require = Rcpp::Environment::base_env()["require"];
+  require("gbrs", Rcpp::Named("quietly") = true);
+  typedef int (*Ptr_validate)(const char *);
+  static Ptr_validate p_validate =
+      (Ptr_validate)R_GetCCallable("gbrs", "_gbrs_RcppExport_validate");
+  if (!p_validate(sig)) {
+    throw Rcpp::function_not_exported("C++ function with signature '" +
+                                      std::string(sig) + "' not found in gbrs");
+  }
 }
+} // namespace
+
+inline DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter,
+                           double lr, int n_quantiles, int batch_size) {
+  typedef SEXP (*Ptr_fit_proba)(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+  static Ptr_fit_proba p_fit_proba = NULL;
+  if (p_fit_proba == NULL) {
+    validateSignature("DataFrame(*fit_proba)(NumericVector,NumericVector,int,"
+                      "double,int,int)");
+    p_fit_proba = (Ptr_fit_proba)R_GetCCallable("gbrs", "_gbrs_fit_proba");
+  }
+  RObject rcpp_result_gen;
+  {
+    RNGScope RCPP_rngScope_gen;
+    rcpp_result_gen = p_fit_proba(
+        Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(y)),
+        Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)),
+        Shield<SEXP>(Rcpp::wrap(n_quantiles)),
+        Shield<SEXP>(Rcpp::wrap(batch_size)));
+  }
+  if (rcpp_result_gen.inherits("interrupted-error"))
+    throw Rcpp::internal::InterruptedException();
+  if (Rcpp::internal::isLongjumpSentinel(rcpp_result_gen))
+    throw Rcpp::LongjumpException(rcpp_result_gen);
+  if (rcpp_result_gen.inherits("try-error"))
+    throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
+  return Rcpp::as<DataFrame>(rcpp_result_gen);
+}
+
+inline DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr,
+                     int n_quantiles, int batch_size) {
+  typedef SEXP (*Ptr_fit)(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+  static Ptr_fit p_fit = NULL;
+  if (p_fit == NULL) {
+    validateSignature(
+        "DataFrame(*fit)(NumericVector,NumericVector,int,double,int,int)");
+    p_fit = (Ptr_fit)R_GetCCallable("gbrs", "_gbrs_fit");
+  }
+  RObject rcpp_result_gen;
+  {
+    RNGScope RCPP_rngScope_gen;
+    rcpp_result_gen =
+        p_fit(Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(y)),
+              Shield<SEXP>(Rcpp::wrap(n_iter)), Shield<SEXP>(Rcpp::wrap(lr)),
+              Shield<SEXP>(Rcpp::wrap(n_quantiles)),
+              Shield<SEXP>(Rcpp::wrap(batch_size)));
+  }
+  if (rcpp_result_gen.inherits("interrupted-error"))
+    throw Rcpp::internal::InterruptedException();
+  if (Rcpp::internal::isLongjumpSentinel(rcpp_result_gen))
+    throw Rcpp::LongjumpException(rcpp_result_gen);
+  if (rcpp_result_gen.inherits("try-error"))
+    throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
+  return Rcpp::as<DataFrame>(rcpp_result_gen);
+}
+
+inline DataFrame fit_survival(NumericMatrix x, NumericVector time,
+                              NumericVector event, int n_iter, double lr,
+                              int n_quantiles, int batch_size,
+                              Rcpp::Nullable<Rcpp::List> quantiles) {
+  typedef SEXP (*Ptr_fit_survival)(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP,
+                                   SEXP);
+  static Ptr_fit_survival p_fit_survival = NULL;
+  if (p_fit_survival == NULL) {
+    validateSignature(
+        "DataFrame(*fit_survival)(NumericMatrix,NumericVector,NumericVector,"
+        "int,double,int,int,Rcpp::Nullable<Rcpp::List>)");
+    p_fit_survival =
+        (Ptr_fit_survival)R_GetCCallable("gbrs", "_gbrs_fit_survival");
+  }
+  RObject rcpp_result_gen;
+  {
+    RNGScope RCPP_rngScope_gen;
+    rcpp_result_gen = p_fit_survival(
+        Shield<SEXP>(Rcpp::wrap(x)), Shield<SEXP>(Rcpp::wrap(time)),
+        Shield<SEXP>(Rcpp::wrap(event)), Shield<SEXP>(Rcpp::wrap(n_iter)),
+        Shield<SEXP>(Rcpp::wrap(lr)), Shield<SEXP>(Rcpp::wrap(n_quantiles)),
+        Shield<SEXP>(Rcpp::wrap(batch_size)),
+        Shield<SEXP>(Rcpp::wrap(quantiles)));
+  }
+  if (rcpp_result_gen.inherits("interrupted-error"))
+    throw Rcpp::internal::InterruptedException();
+  if (Rcpp::internal::isLongjumpSentinel(rcpp_result_gen))
+    throw Rcpp::LongjumpException(rcpp_result_gen);
+  if (rcpp_result_gen.inherits("try-error"))
+    throw Rcpp::exception(Rcpp::as<std::string>(rcpp_result_gen).c_str());
+  return Rcpp::as<DataFrame>(rcpp_result_gen);
+}
+
+} // namespace gbrs
 
 #endif // RCPP_gbrs_RCPPEXPORTS_H_GEN_

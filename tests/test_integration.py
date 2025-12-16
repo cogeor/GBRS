@@ -17,7 +17,7 @@ def test_integration():
 
     # Fit model
     print("Fitting model...")
-    model = GBRS(n_iter=10, lr=0.1, n_quantiles=10, ss_rate=0.5)
+    model = GBRS(n_iter=10, lr=0.1, n_quantiles=10)
     model.fit_proba(X, y)
     
     # Print formatted output
@@ -52,7 +52,7 @@ def test_survival():
     
     # Fit survival model
     print("Fitting survival model...")
-    model = GBRS(n_iter=10, lr=0.1, n_quantiles=5, ss_rate=0.5)
+    model = GBRS(n_iter=10, lr=0.1, n_quantiles=5)
     model._model.fit_survival(X, time, event)
     
     # Print formatted output

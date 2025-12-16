@@ -25,7 +25,7 @@ def test_regression_convergence(diabetes_data):
     mse_test = []
     
     for n_iter in checkpoints:
-        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10, ss_rate=1.0)
+        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10)
         model.fit(X_train, y_train)
         
         # Evaluate on both train and test
@@ -72,7 +72,7 @@ def test_classification_convergence(breast_cancer_data):
     acc_test = []
     
     for n_iter in checkpoints:
-        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10, ss_rate=1.0)
+        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10)
         model.fit_proba(X_train, y_train)
         
         # Evaluate on both train and test
@@ -123,7 +123,7 @@ def test_survival_convergence(veteran_data):
     cindex_test = []
     
     for n_iter in checkpoints:
-        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=5, ss_rate=1.0)
+        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=5)
         model._model.fit_survival(X_train, time_train, event_train)
         
         # Evaluate on both train and test
@@ -161,7 +161,7 @@ def test_no_overfitting_regression(diabetes_data):
     X_test = diabetes_data['X_test']
     y_test = diabetes_data['y_test']
     
-    model = GBRS(n_iter=100, lr=0.1, n_quantiles=10, ss_rate=0.8)
+    model = GBRS(n_iter=100, lr=0.1, n_quantiles=10)
     model.fit(X_train, y_train)
     
     pred_train = model.predict(X_train)

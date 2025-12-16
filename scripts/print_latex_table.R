@@ -11,7 +11,7 @@ model <- gbrs(
   n_max = 50,
   lr = 0.05,
   n_quantiles = 10,
-  ss_rate = 1.0,
+
   objective = "survival"
 )
 

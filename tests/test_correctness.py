@@ -18,7 +18,7 @@ def test_regression_vs_linear_baseline(diabetes_data, linear_baseline):
     Acceptance: GBRS MSE should be within 2x of LinearRegression MSE.
     """
     # Fit GBRS model
-    model = GBRS(n_iter=50, lr=0.1, n_quantiles=10, ss_rate=1.0)
+    model = GBRS(n_iter=50, lr=0.1, n_quantiles=10)
     model.fit(diabetes_data['X_train'], diabetes_data['y_train'])
     
     # Get predictions
@@ -53,7 +53,7 @@ def test_classification_vs_logistic_baseline(breast_cancer_data, logistic_baseli
     Acceptance: GBRS accuracy should be within 5% of LogisticRegression.
     """
     # Fit GBRS model
-    model = GBRS(n_iter=50, lr=0.1, n_quantiles=10, ss_rate=1.0)
+    model = GBRS(n_iter=50, lr=0.1, n_quantiles=10)
     model.fit_proba(breast_cancer_data['X_train'], breast_cancer_data['y_train'])
     
     # Get predictions
@@ -88,7 +88,7 @@ def test_survival_vs_cox_baseline(veteran_data, cox_baseline):
     Acceptance: GBRS C-index should be > 0.6 (better than random).
     """
     # Fit GBRS survival model
-    model = GBRS(n_iter=50, lr=0.1, n_quantiles=5, ss_rate=1.0)
+    model = GBRS(n_iter=50, lr=0.1, n_quantiles=5)
     model._model.fit_survival(
         veteran_data['X_train'],
         veteran_data['time_train'],
@@ -138,7 +138,7 @@ def test_regression_improves_over_iterations(diabetes_data):
     iterations = [1, 5, 10, 20, 50]
     
     for n_iter in iterations:
-        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10, ss_rate=1.0)
+        model = GBRS(n_iter=n_iter, lr=0.1, n_quantiles=10)
         model.fit(X_train, y_train)
         pred = model.predict(X_test)
         mse = calculate_mse(y_test, pred)

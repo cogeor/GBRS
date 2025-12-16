@@ -2,167 +2,203 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include "../inst/include/gbrs.h"
-#include <RcppEigen.h>
 #include <Rcpp.h>
-#include <string>
+#include <RcppEigen.h>
 #include <set>
+#include <string>
+
 
 using namespace Rcpp;
 
 #ifdef RCPP_USE_GLOBAL_ROSTREAM
-Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
-Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+Rcpp::Rostream<true> &Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false> &Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // fit_proba
-DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate);
-static SEXP _gbrs_fit_proba_try(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
-    Rcpp::traits::input_parameter< double >::type lr(lrSEXP);
-    Rcpp::traits::input_parameter< int >::type n_quantiles(n_quantilesSEXP);
-    Rcpp::traits::input_parameter< double >::type ss_rate(ss_rateSEXP);
-    rcpp_result_gen = Rcpp::wrap(fit_proba(x, y, n_iter, lr, n_quantiles, ss_rate));
-    return rcpp_result_gen;
-END_RCPP_RETURN_ERROR
+DataFrame fit_proba(NumericVector x, NumericVector y, int n_iter, double lr,
+                    int n_quantiles, int batch_size);
+static SEXP _gbrs_fit_proba_try(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP,
+                                SEXP lrSEXP, SEXP n_quantilesSEXP,
+                                SEXP batch_sizeSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject rcpp_result_gen;
+  Rcpp::traits::input_parameter<NumericVector>::type x(xSEXP);
+  Rcpp::traits::input_parameter<NumericVector>::type y(ySEXP);
+  Rcpp::traits::input_parameter<int>::type n_iter(n_iterSEXP);
+  Rcpp::traits::input_parameter<double>::type lr(lrSEXP);
+  Rcpp::traits::input_parameter<int>::type n_quantiles(n_quantilesSEXP);
+  Rcpp::traits::input_parameter<int>::type batch_size(batch_sizeSEXP);
+  rcpp_result_gen =
+      Rcpp::wrap(fit_proba(x, y, n_iter, lr, n_quantiles, batch_size));
+  return rcpp_result_gen;
+  END_RCPP_RETURN_ERROR
 }
-RcppExport SEXP _gbrs_fit_proba(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
-    SEXP rcpp_result_gen;
-    {
-        Rcpp::RNGScope rcpp_rngScope_gen;
-        rcpp_result_gen = PROTECT(_gbrs_fit_proba_try(xSEXP, ySEXP, n_iterSEXP, lrSEXP, n_quantilesSEXP, ss_rateSEXP));
-    }
-    Rboolean rcpp_isInterrupt_gen = Rf_inherits(rcpp_result_gen, "interrupted-error");
-    if (rcpp_isInterrupt_gen) {
-        UNPROTECT(1);
-        Rf_onintr();
-    }
-    bool rcpp_isLongjump_gen = Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
-    if (rcpp_isLongjump_gen) {
-        Rcpp::internal::resumeJump(rcpp_result_gen);
-    }
-    Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
-    if (rcpp_isError_gen) {
-        SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
-        UNPROTECT(1);
-        Rf_error(CHAR(rcpp_msgSEXP_gen));
-    }
+RcppExport SEXP _gbrs_fit_proba(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP,
+                                SEXP lrSEXP, SEXP n_quantilesSEXP,
+                                SEXP batch_sizeSEXP) {
+  SEXP rcpp_result_gen;
+  {
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = PROTECT(_gbrs_fit_proba_try(
+        xSEXP, ySEXP, n_iterSEXP, lrSEXP, n_quantilesSEXP, batch_sizeSEXP));
+  }
+  Rboolean rcpp_isInterrupt_gen =
+      Rf_inherits(rcpp_result_gen, "interrupted-error");
+  if (rcpp_isInterrupt_gen) {
     UNPROTECT(1);
-    return rcpp_result_gen;
+    Rf_onintr();
+  }
+  bool rcpp_isLongjump_gen =
+      Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
+  if (rcpp_isLongjump_gen) {
+    Rcpp::internal::resumeJump(rcpp_result_gen);
+  }
+  Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
+  if (rcpp_isError_gen) {
+    SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
+    UNPROTECT(1);
+    Rf_error(CHAR(rcpp_msgSEXP_gen));
+  }
+  UNPROTECT(1);
+  return rcpp_result_gen;
 }
 // fit
-DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr, int n_quantiles, double ss_rate);
-static SEXP _gbrs_fit_try(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
-    Rcpp::traits::input_parameter< double >::type lr(lrSEXP);
-    Rcpp::traits::input_parameter< int >::type n_quantiles(n_quantilesSEXP);
-    Rcpp::traits::input_parameter< double >::type ss_rate(ss_rateSEXP);
-    rcpp_result_gen = Rcpp::wrap(fit(x, y, n_iter, lr, n_quantiles, ss_rate));
-    return rcpp_result_gen;
-END_RCPP_RETURN_ERROR
+DataFrame fit(NumericVector x, NumericVector y, int n_iter, double lr,
+              int n_quantiles, int batch_size);
+static SEXP _gbrs_fit_try(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP,
+                          SEXP n_quantilesSEXP, SEXP batch_sizeSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject rcpp_result_gen;
+  Rcpp::traits::input_parameter<NumericVector>::type x(xSEXP);
+  Rcpp::traits::input_parameter<NumericVector>::type y(ySEXP);
+  Rcpp::traits::input_parameter<int>::type n_iter(n_iterSEXP);
+  Rcpp::traits::input_parameter<double>::type lr(lrSEXP);
+  Rcpp::traits::input_parameter<int>::type n_quantiles(n_quantilesSEXP);
+  Rcpp::traits::input_parameter<int>::type batch_size(batch_sizeSEXP);
+  rcpp_result_gen = Rcpp::wrap(fit(x, y, n_iter, lr, n_quantiles, batch_size));
+  return rcpp_result_gen;
+  END_RCPP_RETURN_ERROR
 }
-RcppExport SEXP _gbrs_fit(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP) {
-    SEXP rcpp_result_gen;
-    {
-        Rcpp::RNGScope rcpp_rngScope_gen;
-        rcpp_result_gen = PROTECT(_gbrs_fit_try(xSEXP, ySEXP, n_iterSEXP, lrSEXP, n_quantilesSEXP, ss_rateSEXP));
-    }
-    Rboolean rcpp_isInterrupt_gen = Rf_inherits(rcpp_result_gen, "interrupted-error");
-    if (rcpp_isInterrupt_gen) {
-        UNPROTECT(1);
-        Rf_onintr();
-    }
-    bool rcpp_isLongjump_gen = Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
-    if (rcpp_isLongjump_gen) {
-        Rcpp::internal::resumeJump(rcpp_result_gen);
-    }
-    Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
-    if (rcpp_isError_gen) {
-        SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
-        UNPROTECT(1);
-        Rf_error(CHAR(rcpp_msgSEXP_gen));
-    }
+RcppExport SEXP _gbrs_fit(SEXP xSEXP, SEXP ySEXP, SEXP n_iterSEXP, SEXP lrSEXP,
+                          SEXP n_quantilesSEXP, SEXP batch_sizeSEXP) {
+  SEXP rcpp_result_gen;
+  {
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = PROTECT(_gbrs_fit_try(xSEXP, ySEXP, n_iterSEXP, lrSEXP,
+                                            n_quantilesSEXP, batch_sizeSEXP));
+  }
+  Rboolean rcpp_isInterrupt_gen =
+      Rf_inherits(rcpp_result_gen, "interrupted-error");
+  if (rcpp_isInterrupt_gen) {
     UNPROTECT(1);
-    return rcpp_result_gen;
+    Rf_onintr();
+  }
+  bool rcpp_isLongjump_gen =
+      Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
+  if (rcpp_isLongjump_gen) {
+    Rcpp::internal::resumeJump(rcpp_result_gen);
+  }
+  Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
+  if (rcpp_isError_gen) {
+    SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
+    UNPROTECT(1);
+    Rf_error(CHAR(rcpp_msgSEXP_gen));
+  }
+  UNPROTECT(1);
+  return rcpp_result_gen;
 }
 // fit_survival
-DataFrame fit_survival(NumericMatrix x, NumericVector time, NumericVector event, int n_iter, double lr, int n_quantiles, double ss_rate, Rcpp::Nullable<Rcpp::List> quantiles);
-static SEXP _gbrs_fit_survival_try(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP, SEXP quantilesSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type time(timeSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type event(eventSEXP);
-    Rcpp::traits::input_parameter< int >::type n_iter(n_iterSEXP);
-    Rcpp::traits::input_parameter< double >::type lr(lrSEXP);
-    Rcpp::traits::input_parameter< int >::type n_quantiles(n_quantilesSEXP);
-    Rcpp::traits::input_parameter< double >::type ss_rate(ss_rateSEXP);
-    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type quantiles(quantilesSEXP);
-    rcpp_result_gen = Rcpp::wrap(fit_survival(x, time, event, n_iter, lr, n_quantiles, ss_rate, quantiles));
-    return rcpp_result_gen;
-END_RCPP_RETURN_ERROR
+DataFrame fit_survival(NumericMatrix x, NumericVector time, NumericVector event,
+                       int n_iter, double lr, int n_quantiles, int batch_size,
+                       Rcpp::Nullable<Rcpp::List> quantiles);
+static SEXP _gbrs_fit_survival_try(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP,
+                                   SEXP n_iterSEXP, SEXP lrSEXP,
+                                   SEXP n_quantilesSEXP, SEXP batch_sizeSEXP,
+                                   SEXP quantilesSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject rcpp_result_gen;
+  Rcpp::traits::input_parameter<NumericMatrix>::type x(xSEXP);
+  Rcpp::traits::input_parameter<NumericVector>::type time(timeSEXP);
+  Rcpp::traits::input_parameter<NumericVector>::type event(eventSEXP);
+  Rcpp::traits::input_parameter<int>::type n_iter(n_iterSEXP);
+  Rcpp::traits::input_parameter<double>::type lr(lrSEXP);
+  Rcpp::traits::input_parameter<int>::type n_quantiles(n_quantilesSEXP);
+  Rcpp::traits::input_parameter<int>::type batch_size(batch_sizeSEXP);
+  Rcpp::traits::input_parameter<Rcpp::Nullable<Rcpp::List>>::type quantiles(
+      quantilesSEXP);
+  rcpp_result_gen = Rcpp::wrap(fit_survival(
+      x, time, event, n_iter, lr, n_quantiles, batch_size, quantiles));
+  return rcpp_result_gen;
+  END_RCPP_RETURN_ERROR
 }
-RcppExport SEXP _gbrs_fit_survival(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP, SEXP n_iterSEXP, SEXP lrSEXP, SEXP n_quantilesSEXP, SEXP ss_rateSEXP, SEXP quantilesSEXP) {
-    SEXP rcpp_result_gen;
-    {
-        Rcpp::RNGScope rcpp_rngScope_gen;
-        rcpp_result_gen = PROTECT(_gbrs_fit_survival_try(xSEXP, timeSEXP, eventSEXP, n_iterSEXP, lrSEXP, n_quantilesSEXP, ss_rateSEXP, quantilesSEXP));
-    }
-    Rboolean rcpp_isInterrupt_gen = Rf_inherits(rcpp_result_gen, "interrupted-error");
-    if (rcpp_isInterrupt_gen) {
-        UNPROTECT(1);
-        Rf_onintr();
-    }
-    bool rcpp_isLongjump_gen = Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
-    if (rcpp_isLongjump_gen) {
-        Rcpp::internal::resumeJump(rcpp_result_gen);
-    }
-    Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
-    if (rcpp_isError_gen) {
-        SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
-        UNPROTECT(1);
-        Rf_error(CHAR(rcpp_msgSEXP_gen));
-    }
+RcppExport SEXP _gbrs_fit_survival(SEXP xSEXP, SEXP timeSEXP, SEXP eventSEXP,
+                                   SEXP n_iterSEXP, SEXP lrSEXP,
+                                   SEXP n_quantilesSEXP, SEXP batch_sizeSEXP,
+                                   SEXP quantilesSEXP) {
+  SEXP rcpp_result_gen;
+  {
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = PROTECT(
+        _gbrs_fit_survival_try(xSEXP, timeSEXP, eventSEXP, n_iterSEXP, lrSEXP,
+                               n_quantilesSEXP, batch_sizeSEXP, quantilesSEXP));
+  }
+  Rboolean rcpp_isInterrupt_gen =
+      Rf_inherits(rcpp_result_gen, "interrupted-error");
+  if (rcpp_isInterrupt_gen) {
     UNPROTECT(1);
-    return rcpp_result_gen;
+    Rf_onintr();
+  }
+  bool rcpp_isLongjump_gen =
+      Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
+  if (rcpp_isLongjump_gen) {
+    Rcpp::internal::resumeJump(rcpp_result_gen);
+  }
+  Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
+  if (rcpp_isError_gen) {
+    SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
+    UNPROTECT(1);
+    Rf_error(CHAR(rcpp_msgSEXP_gen));
+  }
+  UNPROTECT(1);
+  return rcpp_result_gen;
 }
 
 // validate (ensure exported C++ functions exist before calling them)
-static int _gbrs_RcppExport_validate(const char* sig) { 
-    static std::set<std::string> signatures;
-    if (signatures.empty()) {
-        signatures.insert("DataFrame(*fit_proba)(NumericVector,NumericVector,int,double,int,double)");
-        signatures.insert("DataFrame(*fit)(NumericVector,NumericVector,int,double,int,double)");
-        signatures.insert("DataFrame(*fit_survival)(NumericMatrix,NumericVector,NumericVector,int,double,int,double,Rcpp::Nullable<Rcpp::List>)");
-    }
-    return signatures.find(sig) != signatures.end();
+static int _gbrs_RcppExport_validate(const char *sig) {
+  static std::set<std::string> signatures;
+  if (signatures.empty()) {
+    signatures.insert("DataFrame(*fit_proba)(NumericVector,NumericVector,int,"
+                      "double,int,double)");
+    signatures.insert(
+        "DataFrame(*fit)(NumericVector,NumericVector,int,double,int,double)");
+    signatures.insert(
+        "DataFrame(*fit_survival)(NumericMatrix,NumericVector,NumericVector,"
+        "int,double,int,double,Rcpp::Nullable<Rcpp::List>)");
+  }
+  return signatures.find(sig) != signatures.end();
 }
 
 // registerCCallable (register entry points for exported C++ functions)
-RcppExport SEXP _gbrs_RcppExport_registerCCallable() { 
-    R_RegisterCCallable("gbrs", "_gbrs_fit_proba", (DL_FUNC)_gbrs_fit_proba_try);
-    R_RegisterCCallable("gbrs", "_gbrs_fit", (DL_FUNC)_gbrs_fit_try);
-    R_RegisterCCallable("gbrs", "_gbrs_fit_survival", (DL_FUNC)_gbrs_fit_survival_try);
-    R_RegisterCCallable("gbrs", "_gbrs_RcppExport_validate", (DL_FUNC)_gbrs_RcppExport_validate);
-    return R_NilValue;
+RcppExport SEXP _gbrs_RcppExport_registerCCallable() {
+  R_RegisterCCallable("gbrs", "_gbrs_fit_proba", (DL_FUNC)_gbrs_fit_proba_try);
+  R_RegisterCCallable("gbrs", "_gbrs_fit", (DL_FUNC)_gbrs_fit_try);
+  R_RegisterCCallable("gbrs", "_gbrs_fit_survival",
+                      (DL_FUNC)_gbrs_fit_survival_try);
+  R_RegisterCCallable("gbrs", "_gbrs_RcppExport_validate",
+                      (DL_FUNC)_gbrs_RcppExport_validate);
+  return R_NilValue;
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gbrs_fit_proba", (DL_FUNC) &_gbrs_fit_proba, 6},
-    {"_gbrs_fit", (DL_FUNC) &_gbrs_fit, 6},
-    {"_gbrs_fit_survival", (DL_FUNC) &_gbrs_fit_survival, 8},
-    {"_gbrs_RcppExport_registerCCallable", (DL_FUNC) &_gbrs_RcppExport_registerCCallable, 0},
-    {NULL, NULL, 0}
-};
+    {"_gbrs_fit_proba", (DL_FUNC)&_gbrs_fit_proba, 6},
+    {"_gbrs_fit", (DL_FUNC)&_gbrs_fit, 6},
+    {"_gbrs_fit_survival", (DL_FUNC)&_gbrs_fit_survival, 8},
+    {"_gbrs_RcppExport_registerCCallable",
+     (DL_FUNC)&_gbrs_RcppExport_registerCCallable, 0},
+    {NULL, NULL, 0}};
 
 RcppExport void R_init_gbrs(DllInfo *dll) {
-    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
-    R_useDynamicSymbols(dll, FALSE);
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
 }

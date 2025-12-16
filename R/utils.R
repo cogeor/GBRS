@@ -166,8 +166,8 @@ convert.weights.score = function(w) {
 #'   (default: 0.1). Smaller values require more iterations but can improve generalization.
 #' @param n_quantiles Integer. Number of quantile-based split point candidates to
 #'   evaluate for each feature (default: 10). Higher values increase computation time.
-#' @param ss_rate Numeric. Subsampling rate between 0 and 1 (default: 1, no subsampling).
-#'   Values less than 1 enable stochastic gradient boosting.
+#' @param batch_size Integer. Number of samples to use in each boosting iteration (default: 0).
+#'   If 0 or greater than n_samples, the full dataset is used. Values > 0 enable stochastic gradient boosting.
 #' @param objective Character. The objective function to optimize. One of:
 #'   \itemize{
 #'     \item \code{"auto"} (default): Automatically determined from response type
