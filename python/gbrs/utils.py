@@ -557,8 +557,6 @@ def print_model(
     d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names)
 
     base_score_val = params.y0
-    if objective == "survival":
-        base_score_val = None
 
     if format == "text":
         print_score_table(d, base_score=base_score_val)

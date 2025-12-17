@@ -9,7 +9,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 using Eigen::Map;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -162,6 +161,13 @@ VectorXd quantiles(const VectorXd &v, const int n_quantiles) {
     out[i] = sorted[idx];
   }
   return out;
+}
+
+double percentile(const VectorXd &v, double p) {
+  std::vector<double> sorted(v.data(), v.data() + v.size());
+  std::sort(sorted.begin(), sorted.end());
+  int idx = static_cast<int>(p * (sorted.size() - 1));
+  return sorted[idx];
 }
 
 VectorXd less_than(const VectorXd &v, const double val) {
@@ -849,6 +855,20 @@ void Model::fit_survival(const MatrixXd &m, const VectorXd &T,
     f = this->predict(m); // risk scores after adding the latest tree
   }
   this->prune();
+
+  // Compute baseline hazard for low-risk group (bottom 25%)
+  VectorXd scores = this->predict(m);
+  double q25 = percentile(scores, 0.25);
+  double events_low = 0.0, time_low = 0.0;
+  for (Eigen::Index i = 0; i < T.size(); ++i) {
+    if (scores[i] <= q25) {
+      events_low += E[i];
+      time_low += T[i];
+    }
+  }
+  if (time_low > 0 && events_low > 0) {
+    this->params.y0 = std::log(events_low / time_low);
+  }
 }
 
 void Model::set_params(const VectorXd &idxs, const VectorXd &split_val,
