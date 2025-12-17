@@ -220,7 +220,12 @@ def get_score_breaks(
         breaks.append(f"[{splits_fmt[i-1]},{splits_fmt[i]})")
     breaks.append(f">={splits_fmt[-1]}")
 
-    return {"index": idx, "weights": weights_fmt, "breaks": breaks, "splits_raw": vals_split}
+    return {
+        "index": idx,
+        "weights": weights_fmt,
+        "breaks": breaks,
+        "splits_raw": vals_split,
+    }
 
 
 def print_score_table(
@@ -338,11 +343,11 @@ def print_latex_vertical(
 
         # First row includes variable name
         print(f"\\textbf{{{name}}} & {breaks[0]} & {weights[0]} \\\\")
-        
+
         # Subsequent rows
         for i in range(1, len(breaks)):
             print(f" & {breaks[i]} & {weights[i]} \\\\")
-            
+
         print("\\hline")
 
     print("\\end{tabular}")
@@ -368,7 +373,7 @@ def print_md_vertical(
 
         # First row
         print(f"| **{name}** | {breaks[0]} | {weights[0]} |")
-        
+
         # Subsequent rows
         for i in range(1, len(breaks)):
             print(f"| | {breaks[i]} | {weights[i]} |")
