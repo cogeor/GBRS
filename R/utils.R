@@ -252,6 +252,249 @@ gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, batch_s
   obj
 }
 
+#' Bootstrap GBRS Model
+#'
+#' @description
+#' Fits a GBRS model multiple times with bootstrap samples to compute confidence
+#' intervals for weights. Uses pre-computed thresholds from the full dataset to
+#' ensure consistent split points across all bootstrap samples.
+#'
+#' @param formula A formula specifying the model.
+#' @param data A data frame containing the variables in the formula.
+#' @param n_bootstrap Integer. Number of bootstrap iterations (default: 10).
+#' @param n_max Integer. Maximum boosting iterations per fit (default: 100).
+#' @param lr Numeric. Learning rate (default: 0.1).
+#' @param n_quantiles Integer. Number of quantile thresholds (default: 10).
+#' @param batch_size Integer. Batch size for fitting (default: 0).
+#' @param objective Character. Objective function ("auto", "continuous", "binary", "survival").
+#' @param seed Integer. Random seed for reproducibility (default: NULL).
+#'
+#' @return An object of class \code{"gbrs_bootstrap"} containing:
+#'   \item{thresholds}{List of pre-computed thresholds for each feature}
+#'   \item{results}{List of model weights from each bootstrap iteration}
+#'   \item{n_bootstrap}{Number of bootstrap samples}
+#'   \item{objective}{The objective function used}
+#'
+#' @examples
+#' result <- gbrs_bootstrap(mpg ~ wt + hp, data = mtcars, n_bootstrap = 10)
+#' print(result)
+#'
+#' @export
+gbrs_bootstrap <- function(formula, data, n_bootstrap = 10, n_max = 100,
+                           lr = 0.1, n_quantiles = 10, batch_size = 0,
+                           objective = "auto", seed = NULL) {
+  if (!is.null(seed)) set.seed(seed)
+
+  formula <- as.formula(formula)
+  processed <- process.formula(formula, data)
+
+  # Determine objective
+  if (objective == "auto") {
+    objective <- switch(processed$type,
+                        survival = "survival",
+                        standard = "continuous")
+  }
+
+  x <- processed$x
+  n <- nrow(x)
+
+  # Pre-compute thresholds from full data
+  thresholds <- lapply(1:ncol(x), function(i) {
+    probs <- seq(0, 1, length.out = n_quantiles + 2)[-c(1, n_quantiles + 2)]
+    unique(quantile(x[, i], probs = probs))
+  })
+
+  # Run bootstrap iterations
+  all_results <- list()
+
+  for (b in 1:n_bootstrap) {
+    # Sample with replacement
+    idx <- sample(n, n, replace = TRUE)
+    boot_data <- data[idx, , drop = FALSE]
+
+    # Fit model with fixed thresholds
+    weights <- tryCatch({
+      switch(objective,
+        "continuous" = {
+          boot_processed <- process.formula(formula, boot_data)
+          fit(boot_processed$x, boot_processed$y, n_max, lr, n_quantiles, batch_size)
+        },
+        "binary" = {
+          boot_processed <- process.formula(formula, boot_data)
+          fit_proba(boot_processed$x, boot_processed$y, n_max, lr, n_quantiles, batch_size)
+        },
+        "survival" = {
+          boot_processed <- process.formula(formula, boot_data)
+          fit_survival(boot_processed$x, boot_processed$time, boot_processed$event,
+                      n_max, lr, n_quantiles, batch_size, thresholds)
+        },
+        stop("Unknown objective")
+      )
+    }, error = function(e) {
+      warning(paste("Bootstrap iteration", b, "failed:", e$message))
+      NULL
+    })
+
+    if (!is.null(weights)) {
+      all_results[[b]] <- prune.weights(weights)
+    }
+  }
+
+  # Filter out failed iterations
+  all_results <- Filter(Negate(is.null), all_results)
+
+  structure(
+    list(
+      thresholds = thresholds,
+      results = all_results,
+      n_bootstrap = length(all_results),
+      objective = objective,
+      formula = formula,
+      feature_names = colnames(x)
+    ),
+    class = "gbrs_bootstrap"
+  )
+}
+
+#' Print Bootstrap Results
+#'
+#' @description
+#' Prints a summary of bootstrap results showing mean ± standard deviation
+#' for each weight at each threshold.
+#'
+#' @param x An object of class \code{"gbrs_bootstrap"}.
+#' @param prec Integer. Number of decimal places (default: 3).
+#' @param ... Additional arguments (ignored).
+#'
+#' @export
+print.gbrs_bootstrap <- function(x, prec = 3, ...) {
+  cat("GBRS Bootstrap Results (", x$n_bootstrap, " samples)\n", sep = "")
+  cat(strrep("=", 50), "\n\n")
+
+  # Collect all y0 (base scores)
+  y0_values <- sapply(x$results, function(r) r$cst[1])
+  y0_mean <- mean(y0_values, na.rm = TRUE)
+  y0_std <- sd(y0_values, na.rm = TRUE)
+
+  cat("Base Score: ", round(y0_mean, prec), " +/- ", round(y0_std, prec), "\n", sep = "")
+  cat(strrep("-", 50), "\n")
+
+  # Collect all unique (idx, split_val) pairs
+  all_keys <- list()
+  for (result in x$results) {
+    for (i in 1:nrow(result)) {
+      key <- paste(result$idx[i], result$split_val[i], sep = "_")
+      if (!key %in% names(all_keys)) {
+        all_keys[[key]] <- list(idx = result$idx[i], split_val = result$split_val[i], weights = c())
+      }
+      all_keys[[key]]$weights <- c(all_keys[[key]]$weights, result$w[i])
+    }
+  }
+
+  # Add zeros for missing keys in each result
+  for (key in names(all_keys)) {
+    n_present <- length(all_keys[[key]]$weights)
+    n_missing <- x$n_bootstrap - n_present
+    if (n_missing > 0) {
+      all_keys[[key]]$weights <- c(all_keys[[key]]$weights, rep(0, n_missing))
+    }
+  }
+
+  # Group by feature index and sort
+  by_feature <- list()
+  for (key in names(all_keys)) {
+    info <- all_keys[[key]]
+    idx <- info$idx + 1  # Convert to 1-based
+    if (!as.character(idx) %in% names(by_feature)) {
+      by_feature[[as.character(idx)]] <- list()
+    }
+    by_feature[[as.character(idx)]][[key]] <- info
+  }
+
+  # Print by feature
+  for (idx_str in sort(as.numeric(names(by_feature)))) {
+    idx <- as.integer(idx_str)
+    feature_data <- by_feature[[as.character(idx)]]
+
+    # Get feature name
+    feat_name <- if (!is.null(x$feature_names) && idx <= length(x$feature_names)) {
+      x$feature_names[idx]
+    } else {
+      paste0("F", idx - 1)
+    }
+
+    cat("\n", feat_name, ":\n", sep = "")
+
+    # Sort by split_val
+    split_vals <- sapply(feature_data, function(d) d$split_val)
+    ordered <- order(split_vals)
+
+    for (i in ordered) {
+      info <- feature_data[[i]]
+      m <- mean(info$weights)
+      s <- sd(info$weights)
+      sign <- if (m >= 0) "+" else ""
+      cat("  > ", round(info$split_val, prec), ": ",
+          sign, round(m, prec), " +/- ", round(s, prec), "\n", sep = "")
+    }
+  }
+
+  cat("\n")
+  invisible(x)
+}
+
+#' Get Bootstrap Weight Statistics
+#'
+#' @description
+#' Extract mean and standard deviation for each weight from bootstrap results.
+#'
+#' @param x An object of class \code{"gbrs_bootstrap"}.
+#'
+#' @return A data frame with columns: feature, threshold, mean, std
+#'
+#' @export
+summary.gbrs_bootstrap <- function(x, ...) {
+  # Collect all unique (idx, split_val) pairs
+  all_keys <- list()
+  for (result in x$results) {
+    for (i in 1:nrow(result)) {
+      key <- paste(result$idx[i], result$split_val[i], sep = "_")
+      if (!key %in% names(all_keys)) {
+        all_keys[[key]] <- list(idx = result$idx[i], split_val = result$split_val[i], weights = c())
+      }
+      all_keys[[key]]$weights <- c(all_keys[[key]]$weights, result$w[i])
+    }
+  }
+
+  # Add zeros for missing
+  for (key in names(all_keys)) {
+    n_present <- length(all_keys[[key]]$weights)
+    n_missing <- x$n_bootstrap - n_present
+    if (n_missing > 0) {
+      all_keys[[key]]$weights <- c(all_keys[[key]]$weights, rep(0, n_missing))
+    }
+  }
+
+  # Build data frame
+  df <- data.frame(
+    feature_idx = sapply(all_keys, function(k) k$idx),
+    threshold = sapply(all_keys, function(k) k$split_val),
+    mean = sapply(all_keys, function(k) mean(k$weights)),
+    std = sapply(all_keys, function(k) sd(k$weights)),
+    row.names = NULL
+  )
+
+  # Add feature names
+  df$feature_name <- if (!is.null(x$feature_names)) {
+    x$feature_names[df$feature_idx + 1]
+  } else {
+    paste0("F", df$feature_idx)
+  }
+
+  # Order by feature then threshold
+  df[order(df$feature_idx, df$threshold), ]
+}
+
 #' Predict Method for GBRS Models
 #'
 #' @description

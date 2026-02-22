@@ -2,7 +2,10 @@
 
 S3method(predict,gbrs)
 S3method(print,gbrs)
+S3method(print,gbrs_bootstrap)
+S3method(summary,gbrs_bootstrap)
 export(gbrs)
+export(gbrs_bootstrap)
 export(load_gbrs)
 export(load_predictions)
 export(save_gbrs)

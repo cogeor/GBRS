@@ -1,7 +1,10 @@
-from typing import Optional, Dict, Any, Tuple, List, cast
+from typing import Optional, Dict, Any, Tuple, List, cast, TYPE_CHECKING
 from numpy.typing import NDArray
 import numpy as np
 from gbrs.core import Model
+
+if TYPE_CHECKING:
+    from gbrs.bootstrap import BootstrapResult
 
 
 class GBRS:
@@ -12,6 +15,10 @@ class GBRS:
         n_quantiles: int = 5,
         batch_size: int = 0,
     ) -> None:
+        self._n_iter = n_iter
+        self._lr = lr
+        self._n_quantiles = n_quantiles
+        self._batch_size = batch_size
         self._model = Model(n_iter, lr, n_quantiles, batch_size)
         self.objective: Optional[str] = None
 
@@ -138,6 +145,256 @@ class GBRS:
         w_arr = np.array(w, dtype=np.float64)
 
         self._model.set_params(idxs_arr, split_vals_arr, w_arr, float(y0))
+
+    def _compute_thresholds(self, X: NDArray[np.float64]) -> List[NDArray[np.float64]]:
+        """
+        Compute quantile thresholds for each feature.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data to compute quantiles from.
+
+        Returns
+        -------
+        list of arrays
+            Quantile thresholds for each feature.
+        """
+        thresholds = []
+        for i in range(X.shape[1]):
+            col = X[:, i]
+            # Compute n_quantiles evenly spaced quantiles (excluding 0 and 1)
+            quantile_positions = np.linspace(0, 1, self._n_quantiles + 2)[1:-1]
+            q = np.quantile(col, quantile_positions)
+            thresholds.append(np.unique(q))  # Remove duplicates
+        return thresholds
+
+    def bootstrap(
+        self,
+        X: NDArray[np.float64],
+        y: NDArray[np.float64],
+        n_bootstrap: int = 10,
+        random_state: Optional[int] = None,
+    ) -> "BootstrapResult":
+        """
+        Fit regression model with bootstrapping to compute confidence intervals.
+
+        Runs the GBRS algorithm multiple times on bootstrap samples (sampling
+        with replacement), using fixed thresholds computed from the full dataset.
+        This ensures that weights can be aggregated across bootstrap samples.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data.
+        y : array-like of shape (n_samples,)
+            Target values.
+        n_bootstrap : int, default=10
+            Number of bootstrap iterations.
+        random_state : int, optional
+            Random seed for reproducibility.
+
+        Returns
+        -------
+        BootstrapResult
+            Object containing weight statistics across bootstrap samples.
+            Use .print_summary() to display results or .get_weight_stats()
+            for programmatic access.
+
+        Examples
+        --------
+        >>> model = GBRS(n_iter=50, lr=0.1, n_quantiles=5)
+        >>> result = model.bootstrap(X, y, n_bootstrap=10)
+        >>> result.print_summary()
+        """
+        from gbrs.bootstrap import BootstrapResult
+
+        # Pre-compute thresholds from full dataset
+        thresholds = self._compute_thresholds(X)
+
+        # Run bootstrap iterations
+        all_weights: List[Dict[Tuple[int, float], float]] = []
+        all_y0: List[float] = []
+
+        rng = np.random.default_rng(random_state)
+        n = X.shape[0]
+
+        for _ in range(n_bootstrap):
+            # Sample with replacement (indices only - memory efficient)
+            indices = rng.choice(n, n, replace=True)
+            X_boot = X[indices]
+            y_boot = y[indices]
+
+            # Create fresh model with same hyperparameters
+            model = GBRS(
+                n_iter=self._n_iter,
+                lr=self._lr,
+                n_quantiles=self._n_quantiles,
+                batch_size=self._batch_size,
+            )
+            model.fit(X_boot, y_boot, user_quantiles=thresholds)
+
+            # Extract weights
+            params = model._model.get_params()
+            idxs = model._model.get_idxs()
+            split_vals = model._model.get_split_val()
+
+            # Aggregate weights by (idx, split_val) - handles pruned duplicates
+            weights_dict: Dict[Tuple[int, float], float] = {}
+            for idx, sv, w in zip(idxs, split_vals, params.w):
+                if w != 0:  # Only include non-zero weights
+                    key = (int(idx), float(sv))
+                    weights_dict[key] = weights_dict.get(key, 0) + w
+
+            all_weights.append(weights_dict)
+            all_y0.append(float(params.y0))
+
+        return BootstrapResult(
+            thresholds=thresholds,
+            all_weights=all_weights,
+            all_y0=all_y0,
+            objective="continuous",
+        )
+
+    def bootstrap_proba(
+        self,
+        X: NDArray[np.float64],
+        y: NDArray[np.float64],
+        n_bootstrap: int = 10,
+        random_state: Optional[int] = None,
+    ) -> "BootstrapResult":
+        """
+        Fit binary classification model with bootstrapping.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data.
+        y : array-like of shape (n_samples,)
+            Binary target values (0 or 1).
+        n_bootstrap : int, default=10
+            Number of bootstrap iterations.
+        random_state : int, optional
+            Random seed for reproducibility.
+
+        Returns
+        -------
+        BootstrapResult
+            Object containing weight statistics across bootstrap samples.
+        """
+        from gbrs.bootstrap import BootstrapResult
+
+        thresholds = self._compute_thresholds(X)
+        all_weights: List[Dict[Tuple[int, float], float]] = []
+        all_y0: List[float] = []
+
+        rng = np.random.default_rng(random_state)
+        n = X.shape[0]
+
+        for _ in range(n_bootstrap):
+            indices = rng.choice(n, n, replace=True)
+            X_boot = X[indices]
+            y_boot = y[indices]
+
+            model = GBRS(
+                n_iter=self._n_iter,
+                lr=self._lr,
+                n_quantiles=self._n_quantiles,
+                batch_size=self._batch_size,
+            )
+            model.fit_proba(X_boot, y_boot, user_quantiles=thresholds)
+
+            params = model._model.get_params()
+            idxs = model._model.get_idxs()
+            split_vals = model._model.get_split_val()
+
+            weights_dict: Dict[Tuple[int, float], float] = {}
+            for idx, sv, w in zip(idxs, split_vals, params.w):
+                if w != 0:
+                    key = (int(idx), float(sv))
+                    weights_dict[key] = weights_dict.get(key, 0) + w
+
+            all_weights.append(weights_dict)
+            all_y0.append(float(params.y0))
+
+        return BootstrapResult(
+            thresholds=thresholds,
+            all_weights=all_weights,
+            all_y0=all_y0,
+            objective="binary",
+        )
+
+    def bootstrap_survival(
+        self,
+        X: NDArray[np.float64],
+        time: NDArray[np.float64],
+        event: NDArray[np.float64],
+        n_bootstrap: int = 10,
+        random_state: Optional[int] = None,
+    ) -> "BootstrapResult":
+        """
+        Fit survival model with bootstrapping.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            Training data.
+        time : array-like of shape (n_samples,)
+            Survival times.
+        event : array-like of shape (n_samples,)
+            Event indicators (1 if event occurred, 0 if censored).
+        n_bootstrap : int, default=10
+            Number of bootstrap iterations.
+        random_state : int, optional
+            Random seed for reproducibility.
+
+        Returns
+        -------
+        BootstrapResult
+            Object containing weight statistics across bootstrap samples.
+        """
+        from gbrs.bootstrap import BootstrapResult
+
+        thresholds = self._compute_thresholds(X)
+        all_weights: List[Dict[Tuple[int, float], float]] = []
+        all_y0: List[float] = []
+
+        rng = np.random.default_rng(random_state)
+        n = X.shape[0]
+
+        for _ in range(n_bootstrap):
+            indices = rng.choice(n, n, replace=True)
+            X_boot = X[indices]
+            time_boot = time[indices]
+            event_boot = event[indices]
+
+            model = GBRS(
+                n_iter=self._n_iter,
+                lr=self._lr,
+                n_quantiles=self._n_quantiles,
+                batch_size=self._batch_size,
+            )
+            model.fit_survival(X_boot, time_boot, event_boot, user_quantiles=thresholds)
+
+            params = model._model.get_params()
+            idxs = model._model.get_idxs()
+            split_vals = model._model.get_split_val()
+
+            weights_dict: Dict[Tuple[int, float], float] = {}
+            for idx, sv, w in zip(idxs, split_vals, params.w):
+                if w != 0:
+                    key = (int(idx), float(sv))
+                    weights_dict[key] = weights_dict.get(key, 0) + w
+
+            all_weights.append(weights_dict)
+            all_y0.append(float(params.y0))
+
+        return BootstrapResult(
+            thresholds=thresholds,
+            all_weights=all_weights,
+            all_y0=all_y0,
+            objective="survival",
+        )
 
 
 def prune_weights(
