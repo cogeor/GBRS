@@ -45,11 +45,7 @@ build_quantile_map(const MatrixXd& m,
         for (int i = 0; i < n_features; ++i) {
             if (qlist[i] != R_NilValue) {
                 Rcpp::NumericVector qv = qlist[i];
-                VectorXd q(qv.size());
-                for (int j = 0; j < qv.size(); ++j) {
-                    q[j] = qv[j];
-                }
-                qts[i] = q;
+                qts[i] = Rcpp::as<VectorXd>(qv);
             } else {
                 VectorXd col = m.row(i);
                 qts[i] = quantiles(col, n_quantiles);

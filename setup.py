@@ -9,9 +9,9 @@ class BuildExt(build_ext):
         link_opts = []
 
         if compiler_type == "msvc":
-            opts = ["/O2", "/openmp", "/wd4244", "/wd4267", "/wd4018"]
+            opts = ["/O2", "/openmp", "/arch:AVX2", "/wd4244", "/wd4267", "/wd4018"]
         else:
-            opts = ["-O3", "-fopenmp"]
+            opts = ["-O3", "-march=native", "-fopenmp"]
             link_opts = ["-fopenmp"]
 
         for ext in self.extensions:

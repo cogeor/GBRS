@@ -123,27 +123,16 @@ public:
 };
 
 VectorXd convert_logodds_to_p(const VectorXd &logodds) {
-  int n = logodds.size();
-  VectorXd out(n);
-  for (int i = 0; i < n; i++) {
-    out[i] = 1.0 / (1.0 + std::exp(-logodds[i]));
-  }
-  return out;
+  return (1.0 / (1.0 + (-logodds.array()).exp())).matrix();
 }
 
 void convert_logodds_to_p_inplace(VectorXd &p) {
-  int n = p.size();
-  for (int i = 0; i < n; i++) {
-    p[i] = 1.0 / (1.0 + std::exp(-p[i]));
-  }
+  p.array() = 1.0 / (1.0 + (-p.array()).exp());
 }
 
 double logodds(const VectorXd &grps) {
-  double s1 = 0;
+  double s1 = grps.sum();
   double n = grps.size();
-  for (int i = 0; i < grps.size(); i++) {
-    s1 += grps[i];
-  }
   const double eps = 1e-15;
   double s1_clamped = std::max(eps, std::min(s1, n - eps));
   return std::log(s1_clamped / (n - s1_clamped));
@@ -171,20 +160,12 @@ double percentile(const VectorXd &v, double p) {
   return sorted[idx];
 }
 
-VectorXd less_than(const VectorXd &v, const double val) {
-  VectorXd out(v.size());
-  for (int i = 0; i < v.size(); i++) {
-    out[i] = v[i] < val ? 1.0 : 0.0;
-  }
-  return out;
+inline VectorXd less_than(const VectorXd &v, const double val) {
+  return (v.array() < val).cast<double>();
 }
 
-VectorXd greater_than(const VectorXd &v, const double val) {
-  VectorXd out(v.size());
-  for (int i = 0; i < v.size(); i++) {
-    out[i] = v[i] > val ? 1.0 : 0.0;
-  }
-  return out;
+inline VectorXd greater_than(const VectorXd &v, const double val) {
+  return (v.array() > val).cast<double>();
 }
 
 std::array<double, 2> gamma(const VectorXd &grps, const VectorXd &y) {
@@ -214,7 +195,7 @@ std::array<double, 2> gamma(const VectorXd &grps, const VectorXd &y) {
 
 VectorXd gamma_logodds(const VectorXd &grps, const VectorXd &y_pred,
                        const VectorXd &p_true) {
-  VectorXd g = VectorXd::Zero(2);
+  Eigen::Vector2d g = Eigen::Vector2d::Zero();
   VectorXd p_y = convert_logodds_to_p(y_pred);
   VectorXd res = p_true - p_y;
   int n = grps.size();
@@ -262,23 +243,13 @@ std::array<double, 2> gamma_survival(const VectorXd &grps,
   return g;
 }
 
-double l2_norm_mask(const VectorXd &y_p, const VectorXd &y,
-                    const VectorXd &ss_mask) {
-  double sum = 0;
-  // Rcout << "a " << y_p.size() << "b "<<y.size() << "\n";
-  for (size_t i = 0; i < y.size(); i++) {
-    sum += (y_p[i] - y[i]) * (y_p[i] - y[i]) * ss_mask[i];
-  }
-  return sum;
+inline double l2_norm_mask(const VectorXd &y_p, const VectorXd &y,
+                           const VectorXd &ss_mask) {
+  return ((y_p - y).array().square() * ss_mask.array()).sum();
 }
 
-double l2_norm(const VectorXd &y_p, const VectorXd &y) {
-  double sum = 0;
-  // Rcout << "a " << y_p.size() << "b "<<y.size() << "\n";
-  for (size_t i = 0; i < y.size(); i++) {
-    sum += (y_p[i] - y[i]) * (y_p[i] - y[i]);
-  }
-  return sum;
+inline double l2_norm(const VectorXd &y_p, const VectorXd &y) {
+  return (y_p - y).squaredNorm();
 }
 
 VectorXd weight_groups(const VectorXd &mask, const double w1, const double w2) {
@@ -292,10 +263,9 @@ VectorXd weight_groups(const VectorXd &mask, const double w1, const double w2) {
 
 void weight_groups_inplace(VectorXd &vec, const VectorXd &mask, const double w1,
                            const double w2) {
-  const int n = mask.size();
-  for (int i = 0; i < n; i++) {
-    vec[i] += (mask[i] == 0.0) ? w1 : w2;
-  }
+  vec.array() += (mask.array() == 0.0).select(
+      Eigen::ArrayXd::Constant(mask.size(), w1),
+      Eigen::ArrayXd::Constant(mask.size(), w2));
 }
 
 void set_weighted_predictions(VectorXd &vec, const VectorXd &mask,
@@ -853,11 +823,7 @@ std::unordered_map<int, VectorXd> make_quantiles(const MatrixXd &x,
 }
 
 double sum_p_complement(VectorXd &p) {
-  double s = 0;
-  for (int i = 0; i < p.size(); i++) {
-    s += p[i] * (1 - p[i]);
-  }
-  return s;
+  return (p.array() * (1.0 - p.array())).sum();
 }
 
 void Model::prune() {
