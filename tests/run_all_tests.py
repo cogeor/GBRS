@@ -5,6 +5,7 @@ Comprehensive test runner for GBRS.
 This script runs all tests in sequence and provides a summary.
 Can be used as an alternative to direct pytest invocation.
 """
+
 import sys
 import subprocess
 

@@ -200,8 +200,8 @@ class TestBootstrapStatistics:
             assert "upper" in info
             assert "median" in info
             # Lower should be <= upper for each threshold
-            for l, u in zip(info["lower"], info["upper"]):
-                assert l <= u
+            for lo, hi in zip(info["lower"], info["upper"]):
+                assert lo <= hi
 
 
 class TestBootstrapObjectives:

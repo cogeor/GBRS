@@ -13,3 +13,4 @@ src/*.o
 **__pycache__
 .artifacts
 .venv
+.delegate/

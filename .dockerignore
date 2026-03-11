@@ -16,3 +16,6 @@ dist/
 
 # Exclude logs
 *.log
+
+# Exclude delegate work files
+.delegate/
