@@ -50,29 +50,32 @@ public:
 
   void fit(const Eigen::MatrixXd &X, const Eigen::VectorXd &y,
            py::object user_quantiles = py::none()) {
-    auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
+    Eigen::MatrixXd Xt = X.transpose();
+    auto qts = build_quantile_map(Xt, n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
                                     batch_size, seed);
-    model->fit(X.transpose(), y, qts);
+    model->fit(Xt, y, qts);
   }
 
   void fit_proba(const Eigen::MatrixXd &X, const Eigen::VectorXd &y,
                  py::object user_quantiles = py::none()) {
     double y0 = logodds(y);
-    auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
+    Eigen::MatrixXd Xt = X.transpose();
+    auto qts = build_quantile_map(Xt, n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
                                     batch_size, seed);
     model->params.y0 = y0;
-    model->fit_proba(X.transpose(), y, qts);
+    model->fit_proba(Xt, y, qts);
   }
 
   void fit_survival(const Eigen::MatrixXd &X, const Eigen::VectorXd &time,
                     const Eigen::VectorXd &event,
                     py::object user_quantiles = py::none()) {
-    auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
+    Eigen::MatrixXd Xt = X.transpose();
+    auto qts = build_quantile_map(Xt, n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
                                     batch_size, seed);
-    model->fit_survival(X.transpose(), time, event, qts);
+    model->fit_survival(Xt, time, event, qts);
   }
 
   Eigen::VectorXd predict(const Eigen::MatrixXd &X) const {
@@ -88,6 +91,8 @@ public:
   Eigen::VectorXd get_idxs() const { return model->get_idxs(); }
 
   Eigen::VectorXd get_split_val() const { return model->get_split_val(); }
+
+  Eigen::MatrixXd export_model() const { return model->export_model(); }
 
   void set_params(const Eigen::VectorXd &idxs, const Eigen::VectorXd &split_val,
                   const Eigen::VectorXd &w, double y0) {
@@ -116,16 +121,20 @@ PYBIND11_MODULE(core, m) {
            py::arg("lr"), py::arg("n_quantiles"), py::arg("batch_size"),
            py::arg("seed") = 0)
       .def("fit", &PyModel::fit, py::arg("X"), py::arg("y"),
-           py::arg("user_quantiles") = py::none())
+           py::arg("user_quantiles") = py::none(),
+           py::call_guard<py::gil_scoped_release>())
       .def("fit_proba", &PyModel::fit_proba, py::arg("X"), py::arg("y"),
-           py::arg("user_quantiles") = py::none())
+           py::arg("user_quantiles") = py::none(),
+           py::call_guard<py::gil_scoped_release>())
       .def("fit_survival", &PyModel::fit_survival, py::arg("X"),
            py::arg("time"), py::arg("event"),
-           py::arg("user_quantiles") = py::none())
+           py::arg("user_quantiles") = py::none(),
+           py::call_guard<py::gil_scoped_release>())
       .def("predict", &PyModel::predict)
       .def("predict_proba", &PyModel::predict_proba)
       .def("get_params", &PyModel::get_params)
       .def("get_idxs", &PyModel::get_idxs)
       .def("get_split_val", &PyModel::get_split_val)
+      .def("export_model", &PyModel::export_model)
       .def("set_params", &PyModel::set_params);
 }
