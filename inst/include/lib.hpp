@@ -39,7 +39,6 @@ private:
   VectorXd mask;
   VectorXd l_arr;
   MatrixXd gmat;
-  // std::unordered_map<int, Eigen::VectorXd> mean_bins;
   void add_elem(const int idx, const double sv, const double w1,
                 const double w2);
   void iter(const MatrixXd &x, const VectorXd &y,
@@ -95,7 +94,6 @@ private:
   }
 
 public:
-  // std::map<int, VectorXd> qts;
   ScoreParams params;
   VectorXd w1;
   VectorXd w2;
@@ -108,9 +106,7 @@ public:
         w2(VectorXd::Zero(max_n)), i(0), params({0.0, VectorXd::Zero(max_n)}),
         rng_(seed) {}
   VectorXd predict(const MatrixXd &x) const;
-  VectorXd predict_lin_interp(const MatrixXd &x) const;
   VectorXd predict_proba(const MatrixXd &x) const;
-  VectorXd predict_debug(const MatrixXd &x, const double y0) const;
   void fit(const MatrixXd &m, const VectorXd &y,
            const std::unordered_map<int, VectorXd> &qtsw);
   void fit_proba(const MatrixXd &m, const VectorXd &y,
@@ -414,50 +410,6 @@ VectorXd compute_ranking_gradients(const VectorXd &f, const VectorXd &T,
   return -grad;
 }
 
-double cox_partial_ll_loss(const VectorXd &f, const VectorXd &T,
-                           const VectorXd &E, const VectorXd &mask) {
-  const auto n = f.size();
-  const VectorXd exp_f = f.array().exp();
-  double loss = 0.0;
-
-  for (Eigen::Index i = 0; i < n; ++i) {
-    if (E[i] == 1 && mask[i] == 1) {
-      double denom = 0.0;
-
-      for (Eigen::Index j = 0; j < n; ++j) {
-        if (T[j] >= T[i] && mask[j] == 1) {
-          denom += exp_f[j];
-        }
-      }
-
-      loss -= (f[i] - std::log(denom));
-    }
-  }
-  return loss;
-}
-
-VectorXd compute_cox_gradients(const VectorXd &f, const VectorXd &T,
-                               const VectorXd &E) {
-  int n = f.size();
-  VectorXd grad = VectorXd::Zero(n);
-  VectorXd exp_f = f.array().exp();
-
-  for (int i = 0; i < n; ++i) {
-    if (E[i] == 1) {
-      double denom = 0.0;
-      for (int j = 0; j < n; ++j) {
-        if (T[j] >= T[i]) {
-          denom += exp_f[j];
-        }
-      }
-      grad[i] = 1.0 - (exp_f[i] / denom);
-    } else {
-      grad[i] = 0.0; // No contribution from censored samples directly
-    }
-  }
-
-  return grad; // Negative gradient (pseudo-residual)
-}
 
 double cross_entropy_norm_mask(const VectorXd &y_pred, const VectorXd &y_true,
                                const VectorXd &ss_mask) {
@@ -476,16 +428,17 @@ std::array<double, 4> Model::get_best_split(const VectorXd &u,
   std::array<double, 2> g_tmp;
   std::array<double, 4> out;
   VectorXd new_preds(u.size());
-  // Thread-local variables to avoid race conditions
+  // Thread-local variables to avoid race conditions in OMP parallel for
   VectorXd l_arr(n_pts);
   MatrixXd gmat(n_pts, 2);
+  VectorXd split_mask(u.size());
 
   for (int i = 0; i < n_pts; i++) {
-    VectorXd mask = greater_than(u, interp_pts[i]);
-    g_tmp = gamma(mask, y);
+    split_mask = (u.array() > interp_pts[i]).cast<double>();
+    g_tmp = gamma(split_mask, y);
     gmat(i, 0) = g_tmp[0];
     gmat(i, 1) = g_tmp[1];
-    set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
+    set_weighted_predictions(new_preds, split_mask, lr * g_tmp[0], lr * g_tmp[1]);
     l_arr[i] = l2_norm(new_preds, y);
   }
   int idx = 0;
@@ -504,15 +457,16 @@ std::array<double, 4> Model::get_best_split_proba(const VectorXd &u,
   int idx = 0;
   VectorXd new_preds(u.size());
   std::array<double, 4> out;
-  // Thread-local variables to avoid race conditions
+  // Thread-local variables to avoid race conditions in OMP parallel for
   VectorXd l_arr(n_pts);
   MatrixXd gmat(n_pts, 2);
+  VectorXd split_mask(u.size());
 
   for (int i = 0; i < n_pts; i++) {
-    VectorXd mask = greater_than(u, interp_pts[i]);
-    gmat.row(i) = gamma_logodds(mask, preds, y);
+    split_mask = (u.array() > interp_pts[i]).cast<double>();
+    gmat.row(i) = gamma_logodds(split_mask, preds, y);
     new_preds = preds;
-    weight_groups_inplace(new_preds, mask, lr * gmat(i, 0), lr * gmat(i, 1));
+    weight_groups_inplace(new_preds, split_mask, lr * gmat(i, 0), lr * gmat(i, 1));
     convert_logodds_to_p_inplace(new_preds);
     l_arr[i] = cross_entropy_norm(new_preds, y);
     // printf("l %f m %f \n", l_arr[i], mask.sum());
@@ -534,18 +488,20 @@ Model::get_best_split_survival(const VectorXd &u, const VectorXd &gradients,
   VectorXd l_arr(n_pts);
   MatrixXd gmat(n_pts, 2);
   VectorXd new_preds(u.size());
+  VectorXd split_mask(u.size());
+  VectorXd ones_mask = VectorXd::Ones(E.size());
 
   for (int i = 0; i < n_pts; i++) {
-    auto mask = greater_than(u, interp_pts[i]); // binary group mask
-    g_tmp = gamma_survival(mask, gradients);
+    split_mask = (u.array() > interp_pts[i]).cast<double>();
+    g_tmp = gamma_survival(split_mask, gradients);
 
     gmat(i, 0) = g_tmp[0]; // left prediction
     gmat(i, 1) = g_tmp[1]; // right prediction
 
-    set_weighted_predictions(new_preds, mask, lr * g_tmp[0], lr * g_tmp[1]);
+    set_weighted_predictions(new_preds, split_mask, lr * g_tmp[0], lr * g_tmp[1]);
     new_preds += f;
 
-    l_arr[i] = ranking_loss(new_preds, T, E, VectorXd::Ones(E.size()));
+    l_arr[i] = ranking_loss(new_preds, T, E, ones_mask);
   }
 
   int idx = 0;
@@ -628,17 +584,6 @@ std::unordered_map<int, VectorXd> compute_binned_feature_means(
   return result;
 }
 
-VectorXd Model::predict_lin_interp(const MatrixXd &x) const {
-  VectorXd p(x.cols());
-  p.setConstant(this->params.y0);
-  VectorXd mask(x.cols());
-  for (int s_idx = 0; s_idx < this->i; s_idx++) {
-    mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
-    // p += weight_groups(mask, this->w1[s_idx], this->w2[s_idx]);
-    weight_groups_inplace(p, mask, 0.0, this->params.w[s_idx]);
-  }
-  return p;
-}
 
 VectorXd Model::predict_proba(const MatrixXd &x) const {
   VectorXd p(x.cols());
@@ -653,17 +598,6 @@ VectorXd Model::predict_proba(const MatrixXd &x) const {
   return p;
 }
 
-VectorXd Model::predict_debug(const MatrixXd &x, const double y0) const {
-  VectorXd p(x.cols());
-  p.setConstant(y0);
-  VectorXd mask(x.cols());
-  for (int s_idx = 0; s_idx < this->i; s_idx++) {
-    mask = greater_than(x.row(this->idxs[s_idx]), this->split_val[s_idx]);
-    weight_groups_inplace(p, mask, this->w1[s_idx], this->w2[s_idx]);
-  }
-  // convert_logodds_to_p_inplace(p);
-  return p;
-}
 
 void Model::add_elem(const int idx, const double sv, const double w1,
                      const double w2) {
@@ -780,10 +714,10 @@ void Model::iter_survival(const Eigen::MatrixXd &x, const Eigen::VectorXd &T,
     f_ptr = &f_sub;
   }
 
-  // Compute gradients for Cox loss
-  // const Eigen::VectorXd gradients = compute_cox_gradients(f, T, E);
+  // Compute gradients for ranking loss
+  const VectorXd ones_mask = VectorXd::Ones(T_ptr->size());
   const Eigen::VectorXd gradients = compute_ranking_gradients(
-      *f_ptr, *T_ptr, *E_ptr, VectorXd::Ones(T_ptr->size()));
+      *f_ptr, *T_ptr, *E_ptr, ones_mask);
 #pragma omp parallel for shared(x_ptr, gradients, f_ptr, T_ptr, E_ptr,         \
                                     qtsw) default(none) schedule(dynamic)
   for (Eigen::Index i = 0; i < x_ptr->rows(); ++i) {
@@ -843,10 +777,11 @@ void Model::fit_survival(const MatrixXd &m, const VectorXd &T,
 
   VectorXd f = VectorXd::Zero(T.size()); // risk scores (log hazards)
   double loss = 0;
+  const VectorXd ones_mask = VectorXd::Ones(E.size());
 
   for (int iter = 0; iter < this->max_n; ++iter) {
-    // Each boosting step adds a tree to improve the Cox loss
-    loss = ranking_loss(f, T, E, VectorXd::Ones(E.size()));
+    // Each boosting step adds a tree to improve the ranking loss
+    loss = ranking_loss(f, T, E, ones_mask);
     // std::cout << "iter: " << iter << " loss: " << loss << "\n";
     this->iter_survival(m, T, E, qts, f);
 
