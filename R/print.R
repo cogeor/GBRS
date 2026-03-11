@@ -2,11 +2,10 @@
 #' @importFrom stats as.formula terms
 NULL
 
-get.score.breaks = function(scores, idx) {
-    prec=1
-    vals = scores[scores$idx==idx-1, ] 
-    if (length(vals) == 0) {
-        return(list()) 
+get.score.breaks = function(scores, idx, prec=1) {
+    vals = scores[scores$idx==idx-1, ]
+    if (nrow(vals) == 0 || is.null(vals)) {
+        return(list())
     }
     if (is.null(nrow(vals))) {
         return(list("index" = idx, "breaks" = c(paste0("<", vals$split_val)), "weights"=c(sprintf(paste0("%.", prec, "f"), vals$w))))
@@ -23,20 +22,50 @@ get.score.breaks = function(scores, idx) {
             weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
         } else {
             weights[1:i] = weights[1:i] - vals$w[i]
-            #weights[(i+1):length(weights)] = weights[(i+1):length(weights)] + vals$w[i]
         }
     }
     weights = sprintf(paste0("%.", prec, "f"), weights)
     sorted_vals = vals$split_val
-    sorted_vals = sprintf(paste0("%.", prec, "f"), sorted_vals)
+    sorted_vals_fmt = sprintf(paste0("%.", prec, "f"), sorted_vals)
 
-    out = character(length(sorted_vals) + 1)
-    out[1] = paste0("<", sorted_vals[1])
-    for (i in 2:length(sorted_vals)) {
-        out[i] = paste0("[", sorted_vals[i-1], ",", sorted_vals[i], ")")
+    out = character(length(sorted_vals_fmt) + 1)
+    out[1] = paste0("<", sorted_vals_fmt[1])
+    for (i in 2:length(sorted_vals_fmt)) {
+        out[i] = paste0("[", sorted_vals_fmt[i-1], ",", sorted_vals_fmt[i], ")")
     }
-    out[length(sorted_vals)+1] = paste0(">=", sorted_vals[length(sorted_vals)])
-    list("index" = idx, "weights" = weights, "breaks" = out)
+    out[length(sorted_vals_fmt)+1] = paste0(">=", sorted_vals_fmt[length(sorted_vals_fmt)])
+
+    # Collapse adjacent bins with identical formatted weights
+    c_breaks = out[1]
+    c_weights = weights[1]
+    for (i in 2:length(weights)) {
+        if (weights[i] == c_weights[length(c_weights)]) {
+            # Merge: extend previous bin
+            prev = c_breaks[length(c_breaks)]
+            if (i < length(weights)) {
+                # Middle bin absorbed
+                if (startsWith(prev, "<")) {
+                    c_breaks[length(c_breaks)] = paste0("<", sorted_vals_fmt[i])
+                } else if (startsWith(prev, "[")) {
+                    lower = sub(",.*", "", sub("^\\[", "", prev))
+                    c_breaks[length(c_breaks)] = paste0("[", lower, ",", sorted_vals_fmt[i], ")")
+                }
+            } else {
+                # Last bin absorbed
+                if (startsWith(prev, "<")) {
+                    c_breaks[length(c_breaks)] = "all"
+                } else if (startsWith(prev, "[")) {
+                    lower = sub(",.*", "", sub("^\\[", "", prev))
+                    c_breaks[length(c_breaks)] = paste0(">=", lower)
+                }
+            }
+        } else {
+            c_breaks = c(c_breaks, out[i])
+            c_weights = c(c_weights, weights[i])
+        }
+    }
+
+    list("index" = idx, "weights" = c_weights, "breaks" = c_breaks)
 }
 
 score_line = function(score_breaks, feature_names) {

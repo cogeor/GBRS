@@ -14,11 +14,13 @@ class GBRS:
         lr: float = 0.05,
         n_quantiles: int = 5,
         batch_size: int = 0,
+        prec: int = 1,
     ) -> None:
         self._n_iter = n_iter
         self._lr = lr
         self._n_quantiles = n_quantiles
         self._batch_size = batch_size
+        self._prec = prec
         self._model = Model(n_iter, lr, n_quantiles, batch_size)
         self.objective: Optional[str] = None
 
@@ -70,7 +72,13 @@ class GBRS:
         format : str, optional
             Output format: "text" (default), "latex", "md", "latex_h", "md_h", "ascii_h".
         """
-        print_model(self._model, feature_names, format, objective=self.objective)
+        print_model(
+            self._model,
+            feature_names,
+            format,
+            objective=self.objective,
+            prec=self._prec,
+        )
 
     def print_vertical(self, feature_names: Optional[Dict[int, str]] = None) -> None:
         """
@@ -477,10 +485,39 @@ def get_score_breaks(
         breaks.append(f"[{splits_fmt[i-1]},{splits_fmt[i]})")
     breaks.append(f">={splits_fmt[-1]}")
 
+    # Collapse adjacent bins with identical formatted weights
+    collapsed_breaks = [breaks[0]]
+    collapsed_weights = [weights_fmt[0]]
+    for i in range(1, len(weights_fmt)):
+        if weights_fmt[i] == collapsed_weights[-1]:
+            # Merge: extend previous bin to cover this one's range
+            if i < len(weights_fmt) - 1:
+                # Middle bin absorbed — take the upper bound from the next boundary
+                prev = collapsed_breaks[-1]
+                # Extract lower bound from previous break
+                if prev.startswith("<"):
+                    # stays as < next_split
+                    collapsed_breaks[-1] = f"<{splits_fmt[i]}"
+                elif prev.startswith("["):
+                    lower = prev.split(",")[0][1:]
+                    collapsed_breaks[-1] = f"[{lower},{splits_fmt[i]})"
+            else:
+                # Last bin absorbed — extend previous to >=
+                prev = collapsed_breaks[-1]
+                if prev.startswith("<"):
+                    # Entire range collapsed — all bins same weight
+                    collapsed_breaks[-1] = "all"
+                elif prev.startswith("["):
+                    lower = prev.split(",")[0][1:]
+                    collapsed_breaks[-1] = f">={lower}"
+        else:
+            collapsed_breaks.append(breaks[i])
+            collapsed_weights.append(weights_fmt[i])
+
     return {
         "index": idx,
-        "weights": weights_fmt,
-        "breaks": breaks,
+        "weights": collapsed_weights,
+        "breaks": collapsed_breaks,
         "splits_raw": vals_split,
     }
 
@@ -756,6 +793,7 @@ def build_score_breaks_dict(
     w: NDArray[np.float64],
     indices: NDArray[np.float64],
     feature_names: Optional[Dict[int, str]] = None,
+    prec: int = 1,
 ) -> Dict[float, Dict[str, Any]]:
     """
     Build a dict mapping each index to its score breaks dict.
@@ -773,7 +811,7 @@ def build_score_breaks_dict(
     """
     result = {}
     for i in indices:
-        score_breaks = get_score_breaks(split_val, idx, w, i)
+        score_breaks = get_score_breaks(split_val, idx, w, i, prec=prec)
         if score_breaks and score_breaks.get("breaks"):  # Only add non-empty results
             if feature_names:
                 score_breaks["feature_name"] = feature_names.get(i, None)
@@ -788,6 +826,7 @@ def print_model(
     feature_names: Optional[Dict[int, str]] = None,
     format: str = "ascii_h",
     objective: Optional[str] = None,
+    prec: int = 1,
 ) -> None:
     """
     Print the model score table.
@@ -811,7 +850,7 @@ def print_model(
         indices = np.unique(idxs)
         indices.sort()
 
-    d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names)
+    d = build_score_breaks_dict(split_vals, idxs, w, indices, feature_names, prec=prec)
 
     base_score_val = params.y0
 
