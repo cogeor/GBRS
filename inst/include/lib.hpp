@@ -60,6 +60,8 @@ private:
                           const VectorXd &f, const VectorXd &T,
                           const VectorXd &E, const VectorXd &interp_pts);
 
+  mutable std::mt19937 rng_;
+
   // Helper functions for subsampling
   std::vector<int> get_batch_indices(int n_samples) const {
     if (batch_size <= 0 || batch_size >= n_samples) {
@@ -67,8 +69,7 @@ private:
     }
     std::vector<int> indices(n_samples);
     std::iota(indices.begin(), indices.end(), 0);
-    std::shuffle(indices.begin(), indices.end(),
-                 std::mt19937{std::random_device{}()});
+    std::shuffle(indices.begin(), indices.end(), rng_);
     indices.resize(batch_size);
     return indices;
   }
@@ -98,12 +99,14 @@ public:
   ScoreParams params;
   VectorXd w1;
   VectorXd w2;
-  Model(int nrow, int ncol, int max_n, double lr, int n_pts, int batch_size)
+  Model(int nrow, int ncol, int max_n, double lr, int n_pts, int batch_size,
+        unsigned int seed = 0)
       : max_n(max_n), iter_out(MatrixXd(nrow, 4)), mask(VectorXd(nrow)),
         l_arr(VectorXd(n_pts)), gmat(MatrixXd(n_pts, 2)), lr(lr),
         batch_size(batch_size), idxs(VectorXd::Zero(max_n)),
         split_val(VectorXd::Zero(max_n)), w1(VectorXd::Zero(max_n)),
-        w2(VectorXd::Zero(max_n)), i(0), params({0.0, VectorXd::Zero(max_n)}) {}
+        w2(VectorXd::Zero(max_n)), i(0), params({0.0, VectorXd::Zero(max_n)}),
+        rng_(seed) {}
   VectorXd predict(const MatrixXd &x) const;
   VectorXd predict_lin_interp(const MatrixXd &x) const;
   VectorXd predict_proba(const MatrixXd &x) const;

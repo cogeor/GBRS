@@ -74,7 +74,7 @@ class BootstrapResult:
             thresholds = sorted(sv_weights.keys())
             weights_arrays = [np.array(sv_weights[sv]) for sv in thresholds]
             means = [float(np.mean(w)) for w in weights_arrays]
-            stds = [float(np.std(w)) for w in weights_arrays]
+            stds = [float(np.std(w, ddof=1)) for w in weights_arrays]
 
             name = f"F{idx}"
             if feature_names and idx in feature_names:

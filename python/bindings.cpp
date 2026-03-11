@@ -43,15 +43,16 @@ build_quantile_map(const Eigen::MatrixXd &m, int n_quantiles,
 
 class PyModel {
 public:
-  PyModel(int n_iter, double lr, int n_quantiles, int batch_size)
+  PyModel(int n_iter, double lr, int n_quantiles, int batch_size,
+          unsigned int seed = 0)
       : n_iter(n_iter), lr(lr), n_quantiles(n_quantiles),
-        batch_size(batch_size) {}
+        batch_size(batch_size), seed(seed) {}
 
   void fit(const Eigen::MatrixXd &X, const Eigen::VectorXd &y,
            py::object user_quantiles = py::none()) {
     auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
-                                    batch_size);
+                                    batch_size, seed);
     model->fit(X.transpose(), y, qts);
   }
 
@@ -60,7 +61,7 @@ public:
     double y0 = logodds(y);
     auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
-                                    batch_size);
+                                    batch_size, seed);
     model->params.y0 = y0;
     model->fit_proba(X.transpose(), y, qts);
   }
@@ -70,7 +71,7 @@ public:
                     py::object user_quantiles = py::none()) {
     auto qts = build_quantile_map(X.transpose(), n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
-                                    batch_size);
+                                    batch_size, seed);
     model->fit_survival(X.transpose(), time, event, qts);
   }
 
@@ -101,6 +102,7 @@ private:
   double lr;
   int n_quantiles;
   int batch_size;
+  unsigned int seed;
   std::unique_ptr<Model> model;
 };
 
@@ -110,8 +112,9 @@ PYBIND11_MODULE(core, m) {
       .def_readwrite("w", &ScoreParams::w);
 
   py::class_<PyModel>(m, "Model")
-      .def(py::init<int, double, int, int>(), py::arg("n_iter"), py::arg("lr"),
-           py::arg("n_quantiles"), py::arg("batch_size"))
+      .def(py::init<int, double, int, int, unsigned int>(), py::arg("n_iter"),
+           py::arg("lr"), py::arg("n_quantiles"), py::arg("batch_size"),
+           py::arg("seed") = 0)
       .def("fit", &PyModel::fit, py::arg("X"), py::arg("y"),
            py::arg("user_quantiles") = py::none())
       .def("fit_proba", &PyModel::fit_proba, py::arg("X"), py::arg("y"),
