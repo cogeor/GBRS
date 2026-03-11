@@ -32,6 +32,43 @@ class BootstrapResult:
         """Number of bootstrap samples."""
         return len(self.all_weights)
 
+    def _collect_weight_matrix(
+        self,
+    ) -> Tuple[Dict[int, List[float]], Dict[int, NDArray[np.float64]]]:
+        """Build per-feature weight matrices from bootstrap samples.
+
+        Returns (by_feature_thresholds, by_feature_weights) where:
+        - by_feature_thresholds maps feature_idx -> sorted list of threshold values
+        - by_feature_weights maps feature_idx -> 2D array of shape (n_bootstrap, n_thresholds)
+        """
+        all_keys: set = set()
+        for weights in self.all_weights:
+            all_keys.update(weights.keys())
+
+        by_feature: Dict[int, set] = {}
+        for idx, sv in all_keys:
+            if idx not in by_feature:
+                by_feature[idx] = set()
+            by_feature[idx].add(sv)
+
+        thresholds_map: Dict[int, List[float]] = {}
+        weights_map: Dict[int, NDArray[np.float64]] = {}
+
+        for idx in sorted(by_feature.keys()):
+            thresholds = sorted(by_feature[idx])
+            thresholds_map[idx] = thresholds
+            sv_to_col = {sv: j for j, sv in enumerate(thresholds)}
+
+            mat = np.zeros((self.n_bootstrap, len(thresholds)))
+            for i, weights in enumerate(self.all_weights):
+                for (widx, sv), w in weights.items():
+                    if widx == idx:
+                        mat[i, sv_to_col[sv]] = w
+
+            weights_map[idx] = mat
+
+        return thresholds_map, weights_map
+
     def get_weight_stats(
         self, feature_names: Optional[Dict[int, str]] = None
     ) -> Dict[int, Dict[str, Any]]:
@@ -49,44 +86,19 @@ class BootstrapResult:
             Dictionary mapping feature index to stats:
             {"thresholds": [...], "mean": [...], "std": [...], "name": str}
         """
-        # Collect all unique (idx, split_val) keys across all bootstrap samples
-        all_keys: set = set()
-        for weights in self.all_weights:
-            all_keys.update(weights.keys())
-
-        # Group by feature index
-        by_feature: Dict[int, Dict[float, List[float]]] = {}
-        for idx, sv in all_keys:
-            if idx not in by_feature:
-                by_feature[idx] = {}
-            by_feature[idx][sv] = []
-
-        # Collect weights for each (idx, sv) across bootstrap samples
-        # If a threshold wasn't selected in a bootstrap run, it gets weight 0
-        for weights in self.all_weights:
-            for idx, sv in all_keys:
-                w = weights.get((idx, sv), 0.0)
-                by_feature[idx][sv].append(w)
-
-        # Compute statistics
+        thresholds_map, weights_map = self._collect_weight_matrix()
         result: Dict[int, Dict[str, Any]] = {}
-        for idx, sv_weights in sorted(by_feature.items()):
-            thresholds = sorted(sv_weights.keys())
-            weights_arrays = [np.array(sv_weights[sv]) for sv in thresholds]
-            means = [float(np.mean(w)) for w in weights_arrays]
-            stds = [float(np.std(w, ddof=1)) for w in weights_arrays]
-
+        for idx in sorted(thresholds_map.keys()):
+            mat = weights_map[idx]
             name = f"F{idx}"
             if feature_names and idx in feature_names:
                 name = feature_names[idx]
-
             result[idx] = {
-                "thresholds": thresholds,
-                "mean": means,
-                "std": stds,
+                "thresholds": thresholds_map[idx],
+                "mean": np.mean(mat, axis=0).tolist(),
+                "std": np.std(mat, axis=0, ddof=1).tolist(),
                 "name": name,
             }
-
         return result
 
     def get_y0_stats(self) -> Tuple[float, float]:
@@ -118,45 +130,22 @@ class BootstrapResult:
             Dictionary mapping feature index to CI stats:
             {"thresholds": [...], "lower": [...], "upper": [...], "median": [...]}
         """
-        all_keys: set = set()
-        for weights in self.all_weights:
-            all_keys.update(weights.keys())
-
-        by_feature: Dict[int, Dict[float, List[float]]] = {}
-        for idx, sv in all_keys:
-            if idx not in by_feature:
-                by_feature[idx] = {}
-            by_feature[idx][sv] = []
-
-        for weights in self.all_weights:
-            for idx, sv in all_keys:
-                w = weights.get((idx, sv), 0.0)
-                by_feature[idx][sv].append(w)
-
+        thresholds_map, weights_map = self._collect_weight_matrix()
         lower_pct = alpha / 2 * 100
         upper_pct = (1 - alpha / 2) * 100
-
         result: Dict[int, Dict[str, Any]] = {}
-        for idx, sv_weights in sorted(by_feature.items()):
-            thresholds = sorted(sv_weights.keys())
-            weights_arrays = [np.array(sv_weights[sv]) for sv in thresholds]
-
-            lower = [float(np.percentile(w, lower_pct)) for w in weights_arrays]
-            upper = [float(np.percentile(w, upper_pct)) for w in weights_arrays]
-            median = [float(np.median(w)) for w in weights_arrays]
-
+        for idx in sorted(thresholds_map.keys()):
+            mat = weights_map[idx]
             name = f"F{idx}"
             if feature_names and idx in feature_names:
                 name = feature_names[idx]
-
             result[idx] = {
-                "thresholds": thresholds,
-                "lower": lower,
-                "upper": upper,
-                "median": median,
+                "thresholds": thresholds_map[idx],
+                "lower": np.percentile(mat, lower_pct, axis=0).tolist(),
+                "upper": np.percentile(mat, upper_pct, axis=0).tolist(),
+                "median": np.median(mat, axis=0).tolist(),
                 "name": name,
             }
-
         return result
 
     def print_summary(
