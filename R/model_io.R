@@ -106,6 +106,6 @@ save_predictions <- function(predictions, filepath) {
 load_predictions <- function(filepath) {
   if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite is required")
   
-  pred_data <- read_json(filepath)
+  pred_data <- jsonlite::read_json(filepath)
   return(as.numeric(pred_data$predictions))
 }
