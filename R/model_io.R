@@ -9,7 +9,7 @@
 #' @param filepath Path to save the model file
 #' @export
 save_gbrs <- function(model, filepath) {
-  library(jsonlite)
+  if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite is required")
   
   # Extract model components
   weights <- model$weights
@@ -34,7 +34,7 @@ save_gbrs <- function(model, filepath) {
   )
   
   # Write to JSON file
-  write_json(model_data, filepath, pretty = TRUE, auto_unbox = TRUE)
+  jsonlite::write_json(model_data, filepath, pretty = TRUE, auto_unbox = TRUE)
 }
 
 #' Load a GBRS Model from JSON File
@@ -43,10 +43,10 @@ save_gbrs <- function(model, filepath) {
 #' @return A gbrs model object
 #' @export
 load_gbrs <- function(filepath) {
-  library(jsonlite)
+  if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite is required")
   
   # Read JSON file
-  model_data <- read_json(filepath)
+  model_data <- jsonlite::read_json(filepath)
   
   # Validate version
   if (model_data$version != "1.0") {
@@ -92,10 +92,10 @@ load_gbrs <- function(filepath) {
 #' @param filepath Path to save predictions
 #' @export
 save_predictions <- function(predictions, filepath) {
-  library(jsonlite)
+  if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite is required")
   
   pred_data <- list(predictions = as.numeric(predictions))
-  write_json(pred_data, filepath, pretty = TRUE, auto_unbox = FALSE)
+  jsonlite::write_json(pred_data, filepath, pretty = TRUE, auto_unbox = FALSE)
 }
 
 #' Load Predictions from JSON File
@@ -104,7 +104,7 @@ save_predictions <- function(predictions, filepath) {
 #' @return Numeric vector of predictions
 #' @export
 load_predictions <- function(filepath) {
-  library(jsonlite)
+  if (!requireNamespace("jsonlite", quietly = TRUE)) stop("jsonlite is required")
   
   pred_data <- read_json(filepath)
   return(as.numeric(pred_data$predictions))

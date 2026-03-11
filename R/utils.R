@@ -32,13 +32,6 @@ process.formula <- function(formula, data) {
   }
 }
 
-cross.entropy <- function(p, phat){
-  x <- 0
-  for (i in 1:length(p)){
-    x <- x + (p[i] * log(phat[i]))
-  }
-  return(-x)
-}
 
 predict_score_proba = function(model, x) {
     yp = rep(model$cst[1], nrow(x))
@@ -64,38 +57,6 @@ predict_score2 = function(model, x) {
     yp
 }
 
-prune.weights.old = function(w) {
-    idxs = c()
-    vals = c()
-    w1 = c()
-    w2 = c()
-
-    for (i in 1:ncol(w)) {
-        found = FALSE
-        if(length(idxs) > 0) {
-            for (j in 1:length(idxs)) {
-                if ((w[1, i] == idxs[j]) & (w[2, i] == vals[j])) {
-                    w1[j] = w1[j] + w[3, i] 
-                    w2[j] = w2[j] + w[4, i] 
-                    found = TRUE
-                }
-            }
-        }
-        if(!found) {
-            idxs = c(idxs, w[1, i])
-            vals = c(vals, w[2, i])
-            w1 = c(w1, w[3, i])
-            w2 = c(w2, w[4, i])
-        } 
-    }
-    n_unique = length(idxs)
-    new_w = matrix(ncol=n_unique, nrow=4)
-    new_w[1,] = idxs
-    new_w[2,] = vals
-    new_w[3,] = w1 
-    new_w[4,] = w2 
-    new_w
-}
 
 prune.weights = function(model_weights) {
     idx = c()
@@ -137,17 +98,6 @@ prune.weights = function(model_weights) {
     df
 }
 
-convert.weights.score = function(w) {
-    cst = 0
-    score_mat = matrix(ncol=ncol(w), nrow=3)
-    for (i in 1:ncol(w)) {
-        cst = cst + w[4, i]
-        score_mat[1, i] = w[1, i]
-        score_mat[2, i] = w[2, i]
-        score_mat[3, i] = w[3, i] - w[4, i]
-    }
-    list("score"=score_mat, "cst"=cst)
-}
 
 #' Fit a Gradient Boosted Rule Set Model
 #'
@@ -543,12 +493,3 @@ predict.gbrs <- function(obj, newdata) {
   return(pred)
 }
 
-predict_round = function(coeffs, formula, data) {
-    formula = as.formula(formula)
-    frame = model.frame(terms(formula), data)
-    resp =  model.extract(frame, "response")
-    mat = model.matrix(terms(formula), data)
-    r_coeffs = round(coeffs / min(abs(coeffs))) * min(abs(coeffs))
-    yp_r = mat %*% r_coeffs # yp == yp_lm
-    yp_r
-}

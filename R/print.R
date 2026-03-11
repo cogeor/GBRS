@@ -73,14 +73,14 @@ score_line = function(score_breaks, feature_names) {
     t(da)
 }
 
-print_model_score = function(scores, formula) {
+print_model_score = function(scores, formula, prec = 1) {
     formula = as.formula(formula)
     terms_obj = terms(formula)
     independent_vars <- attr(terms_obj, "term.labels")
     a = data.frame()
     for (i in 1:length(independent_vars)) {
         if ((i-1) %in% scores$idx){
-            score_breaks = get.score.breaks(scores, i)
+            score_breaks = get.score.breaks(scores, i, prec = prec)
             if (length(score_breaks) > 0) {
                 line = score_line(score_breaks, independent_vars)
                 print(line)
@@ -113,6 +113,7 @@ print_model_score = function(scores, formula) {
 #' @seealso \code{\link{gbrs}}, \code{\link{predict.gbrs}}
 #' @export
 print.gbrs <- function(x, format = "ascii_h", ...) {
+    prec <- if (!is.null(x$prec)) x$prec else 1L
     if (format == "latex") {
         print.latex(x, ...)
     } else if (format == "md") {
@@ -124,8 +125,9 @@ print.gbrs <- function(x, format = "ascii_h", ...) {
     } else if (format == "ascii_h") {
         print.ascii.horizontal(x, ...)
     } else {
-        print_model_score(x$weights, x$formula)
+        print_model_score(x$weights, x$formula, prec = prec)
     }
+    invisible(x)
 }
 
 #' Print GBRS Model in Legacy Vertical Format
