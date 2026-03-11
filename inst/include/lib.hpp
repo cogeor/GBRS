@@ -127,7 +127,7 @@ VectorXd convert_logodds_to_p(const VectorXd &logodds) {
   int n = logodds.size();
   VectorXd out(n);
   for (int i = 0; i < n; i++) {
-    out[i] = std::exp(logodds[i]) / (1 + std::exp(logodds[i]));
+    out[i] = 1.0 / (1.0 + std::exp(-logodds[i]));
   }
   return out;
 }
@@ -135,7 +135,7 @@ VectorXd convert_logodds_to_p(const VectorXd &logodds) {
 void convert_logodds_to_p_inplace(VectorXd &p) {
   int n = p.size();
   for (int i = 0; i < n; i++) {
-    p[i] = std::exp(p[i]) / (1 + std::exp(p[i]));
+    p[i] = 1.0 / (1.0 + std::exp(-p[i]));
   }
 }
 
@@ -145,7 +145,9 @@ double logodds(const VectorXd &grps) {
   for (int i = 0; i < grps.size(); i++) {
     s1 += grps[i];
   }
-  return std::log(s1 / (n - s1));
+  const double eps = 1e-15;
+  double s1_clamped = std::max(eps, std::min(s1, n - eps));
+  return std::log(s1_clamped / (n - s1_clamped));
 }
 
 VectorXd quantiles(const VectorXd &v, const int n_quantiles) {
@@ -307,11 +309,9 @@ void set_weighted_predictions(VectorXd &vec, const VectorXd &mask,
 
 double cross_entropy_norm(const VectorXd &y_pred, const VectorXd &y_true) {
   VectorXd clipped_y_pred = y_pred.cwiseMax(1e-15).cwiseMin(1 - 1e-15);
-  //    double cross_entropy = -(y_true.array() * clipped_y_pred.array().log() +
-  //                             (1 - y_true.array()) * (1 -
-  //                             clipped_y_pred.array()).log()).sum();
-  //
-  double cross_entropy = -(y_true.array() * clipped_y_pred.array().log()).sum();
+  double cross_entropy = -(y_true.array() * clipped_y_pred.array().log() +
+                           (1 - y_true.array()) * (1 -
+                           clipped_y_pred.array()).log()).sum();
   return cross_entropy;
 }
 
@@ -331,7 +331,7 @@ double ranking_loss(const VectorXd &f, const VectorXd &T, const VectorXd &E,
 
       if (T[i] < T[j]) {
         double diff = f[j] - f[i];
-        loss += std::log(1 + std::exp(diff));
+        loss += std::max(0.0, diff) + std::log(1.0 + std::exp(-std::abs(diff)));
         pair_count++;
       }
     }
@@ -367,8 +367,7 @@ VectorXd compute_ranking_gradients_par(const VectorXd &f, const VectorXd &T,
 
         if (T[i] < T[j]) {
           double diff = f[j] - f[i];
-          double exp_diff = std::exp(diff);
-          double sigmoid = exp_diff / (1.0 + exp_diff);
+          double sigmoid = 1.0 / (1.0 + std::exp(-diff));
 
           grad[i] -= sigmoid;
           grad[j] += sigmoid;
@@ -401,8 +400,7 @@ VectorXd compute_ranking_gradients(const VectorXd &f, const VectorXd &T,
 
       if (T[i] < T[j]) {
         double diff = f[j] - f[i];
-        double exp_diff = std::exp(diff);
-        double sigmoid = exp_diff / (1.0 + exp_diff);
+        double sigmoid = 1.0 / (1.0 + std::exp(-diff));
 
         grad[i] -= sigmoid;
         grad[j] += sigmoid;
@@ -461,12 +459,10 @@ VectorXd compute_cox_gradients(const VectorXd &f, const VectorXd &T,
 double cross_entropy_norm_mask(const VectorXd &y_pred, const VectorXd &y_true,
                                const VectorXd &ss_mask) {
   VectorXd clipped_y_pred = y_pred.cwiseMax(1e-15).cwiseMin(1 - 1e-15);
-  //    double cross_entropy = -(y_true.array() * clipped_y_pred.array().log() +
-  //                             (1 - y_true.array()) * (1 -
-  //                             clipped_y_pred.array()).log()).sum();
-  //
   double cross_entropy =
-      -(ss_mask.array() * y_true.array() * clipped_y_pred.array().log()).sum();
+      -(ss_mask.array() * (y_true.array() * clipped_y_pred.array().log() +
+                           (1 - y_true.array()) * (1 -
+                           clipped_y_pred.array()).log())).sum();
   return cross_entropy;
 }
 

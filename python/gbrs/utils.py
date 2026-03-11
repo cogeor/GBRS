@@ -242,7 +242,7 @@ class GBRS:
             # Aggregate weights by (idx, split_val) - handles pruned duplicates
             weights_dict: Dict[Tuple[int, float], float] = {}
             for idx, sv, w in zip(idxs, split_vals, params.w):
-                if w != 0:  # Only include non-zero weights
+                if abs(w) > 1e-12:  # Only include non-zero weights
                     key = (int(idx), float(sv))
                     weights_dict[key] = weights_dict.get(key, 0) + w
 
