@@ -51,9 +51,12 @@ public:
   void fit(const Eigen::MatrixXd &X, const Eigen::VectorXd &y,
            py::object user_quantiles = py::none()) {
     Eigen::MatrixXd Xt = X.transpose();
+    // build_quantile_map touches Python objects, so must run with GIL held
     auto qts = build_quantile_map(Xt, n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
                                     batch_size, seed);
+    // Release GIL only for the pure-C++ fit
+    py::gil_scoped_release release;
     model->fit(Xt, y, qts);
   }
 
@@ -65,6 +68,7 @@ public:
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
                                     batch_size, seed);
     model->params.y0 = y0;
+    py::gil_scoped_release release;
     model->fit_proba(Xt, y, qts);
   }
 
@@ -75,6 +79,7 @@ public:
     auto qts = build_quantile_map(Xt, n_quantiles, user_quantiles);
     model = std::make_unique<Model>(X.cols(), X.rows(), n_iter, lr, n_quantiles,
                                     batch_size, seed);
+    py::gil_scoped_release release;
     model->fit_survival(Xt, time, event, qts);
   }
 
@@ -121,15 +126,12 @@ PYBIND11_MODULE(core, m) {
            py::arg("lr"), py::arg("n_quantiles"), py::arg("batch_size"),
            py::arg("seed") = 0)
       .def("fit", &PyModel::fit, py::arg("X"), py::arg("y"),
-           py::arg("user_quantiles") = py::none(),
-           py::call_guard<py::gil_scoped_release>())
+           py::arg("user_quantiles") = py::none())
       .def("fit_proba", &PyModel::fit_proba, py::arg("X"), py::arg("y"),
-           py::arg("user_quantiles") = py::none(),
-           py::call_guard<py::gil_scoped_release>())
+           py::arg("user_quantiles") = py::none())
       .def("fit_survival", &PyModel::fit_survival, py::arg("X"),
            py::arg("time"), py::arg("event"),
-           py::arg("user_quantiles") = py::none(),
-           py::call_guard<py::gil_scoped_release>())
+           py::arg("user_quantiles") = py::none())
       .def("predict", &PyModel::predict)
       .def("predict_proba", &PyModel::predict_proba)
       .def("get_params", &PyModel::get_params)
