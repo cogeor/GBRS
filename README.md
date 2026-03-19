@@ -14,6 +14,7 @@ This library provides an algorithm based on gradient boosting for generating ris
 - **Interpretability**: Produces a simple points-based score card (see below for example), optionally with user-defined thresholds.
 - **Multi-objective**: Supports regression, binary classification, and survival analysis.
 - **Non-linear effects**: Captures complex relationships through gradient boosting.
+- **Bootstrap**: Compute confidence intervals on weights via bootstrapping.
 - **Cross-platform**: Works on Linux, macOS, and Windows.
 
 
@@ -106,6 +107,37 @@ model <- gbrs(Surv(time, status) ~ trt + age + celltype,
 
 # Print score table (defaults to horizontal format)
 print(model)
+```
+
+### Bootstrap
+
+GBRS supports bootstrapping to compute confidence intervals on model weights. Thresholds are pre-computed from the full dataset so that weights are comparable across bootstrap samples.
+
+#### Python
+
+```python
+model = GBRS(n_iter=300, lr=0.05, n_quantiles=5)
+result = model.bootstrap(X_train, y_train, n_bootstrap=100, random_state=42)
+
+# Print mean ± std for each weight
+feature_names = {i: f"Feature_{i}" for i in range(X_train.shape[1])}
+result.print_summary(feature_names)
+
+# Programmatic access
+stats = result.get_weight_stats()               # mean, std per weight
+cis = result.get_confidence_intervals(alpha=0.05)  # 95% CIs
+```
+
+`bootstrap_proba` and `bootstrap_survival` are also available for classification and survival objectives.
+
+#### R
+
+```R
+result <- gbrs_bootstrap(Surv(time, status) ~ trt + age + celltype,
+                         data = veteran, objective = "survival",
+                         n_bootstrap = 100, seed = 42)
+print(result)
+summary(result)
 ```
 
 ## Example Output
