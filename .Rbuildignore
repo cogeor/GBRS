@@ -22,6 +22,8 @@
 ^dist$
 ^dist\.bak$
 ^Dockerfile$
+^Dockerfile\.cran$
+^check-output$
 ^docs$
 ^MANIFEST\.in$
 ^pyproject\.toml$

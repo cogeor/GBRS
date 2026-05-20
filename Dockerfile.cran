@@ -1,0 +1,36 @@
+FROM rocker/r-base:4.5.0
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Build toolchain (rocker/r-base has R but no system compilers by default)
+# Plus the system libs Rcpp packages typically need
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        qpdf \
+        texinfo \
+        pandoc \
+        libxml2-dev \
+        libssl-dev \
+        libcurl4-openssl-dev \
+        devscripts \
+    && rm -rf /var/lib/apt/lists/*
+
+# R dependencies needed both at build/check time and inside test scripts.
+# Pre-install so each container run is a clean R CMD check, not also a long
+# install step. roxygen2/testthat are dev tools; R CMD check doesn't need them.
+RUN install2.r --error --skipinstalled \
+        Rcpp RcppEigen jsonlite survival
+
+WORKDIR /work
+COPY . /work/
+
+# Default action: run the same R CMD check --as-cran the maintainer runs locally.
+# The output directory is mapped to /work/check-output so the host can read it.
+CMD set -e && \
+    rm -f gbrs_*.tar.gz && \
+    R CMD build . --no-build-vignettes && \
+    mkdir -p /work/check-output && \
+    R CMD check --as-cran --no-manual --output=/work/check-output gbrs_*.tar.gz && \
+    echo "=== check.log summary ===" && \
+    grep -E '^\*|^WARNING|^NOTE|^ERROR|^Status' /work/check-output/gbrs.Rcheck/00check.log

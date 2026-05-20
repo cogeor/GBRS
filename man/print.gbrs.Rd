@@ -22,7 +22,7 @@ format, showing feature names, split thresholds, and associated weights.
 Can also generate LaTeX or Markdown tables.
 }
 \examples{
-model <- gbrs(mpg ~ wt + hp, data = mtcars)
+model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
 print(model)          # Text output
 print(model, "latex") # LaTeX output
 print(model, "md")    # Markdown output

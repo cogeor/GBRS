@@ -48,7 +48,10 @@ intervals for weights. Uses pre-computed thresholds from the full dataset to
 ensure consistent split points across all bootstrap samples.
 }
 \examples{
-result <- gbrs_bootstrap(mpg ~ wt + hp, data = mtcars, n_bootstrap = 10)
+\donttest{
+result <- gbrs_bootstrap(mpg ~ wt + hp, data = mtcars,
+                         n_bootstrap = 5, n_max = 20, n_quantiles = 5)
 print(result)
+}
 
 }

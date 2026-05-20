@@ -135,21 +135,24 @@ prune.weights = function(model_weights) {
 #'   \item{objective}{The objective function used ("continuous", "binary", or "survival")}
 #'
 #' @examples
-#' # Regression example
-#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 50, lr = 0.1)
-#' print(model)
+#' # Regression — small example kept under CRAN's 5-second budget
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, lr = 0.1, n_quantiles = 5)
 #' predictions <- predict(model, mtcars)
 #'
+#' \donttest{
 #' # Binary classification
 #' model_binary <- gbrs(am ~ mpg + wt + hp, data = mtcars,
-#'                      objective = "binary", n_max = 100)
+#'                      objective = "binary", n_max = 30, n_quantiles = 5)
 #' probs <- predict(model_binary, mtcars)
 #'
-#' # Survival analysis
-#' library(survival)
-#' model_surv <- gbrs(Surv(time, status) ~ age + sex + ph.ecog,
-#'                    data = lung, objective = "survival")
-#' risk_scores <- predict(model_surv, lung)
+#' # Survival analysis (requires the survival package)
+#' if (requireNamespace("survival", quietly = TRUE)) {
+#'   model_surv <- gbrs(survival::Surv(time, status) ~ age + sex + ph.ecog,
+#'                      data = survival::lung, objective = "survival",
+#'                      n_max = 30, n_quantiles = 5)
+#'   risk_scores <- predict(model_surv, survival::lung)
+#' }
+#' }
 #'
 #' @seealso \code{\link{predict.gbrs}}, \code{\link{print.gbrs}}
 #' @export
@@ -226,8 +229,11 @@ gbrs <- function(formula, data, n_max = 100, lr = 0.1, n_quantiles = 10, batch_s
 #'   \item{objective}{The objective function used}
 #'
 #' @examples
-#' result <- gbrs_bootstrap(mpg ~ wt + hp, data = mtcars, n_bootstrap = 10)
+#' \donttest{
+#' result <- gbrs_bootstrap(mpg ~ wt + hp, data = mtcars,
+#'                          n_bootstrap = 5, n_max = 20, n_quantiles = 5)
 #' print(result)
+#' }
 #'
 #' @export
 gbrs_bootstrap <- function(formula, data, n_bootstrap = 10, n_max = 100,
@@ -467,18 +473,17 @@ summary.gbrs_bootstrap <- function(object, ...) {
 #'   }
 #'
 #' @examples
-#' # Fit model on training data
-#' train_idx <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
+#' predictions <- predict(model, mtcars)
+#'
+#' \donttest{
+#' # More realistic workflow with a train/test split
+#' train_idx <- sample(seq_len(nrow(mtcars)), 0.7 * nrow(mtcars))
 #' train_data <- mtcars[train_idx, ]
 #' test_data <- mtcars[-train_idx, ]
-#'
-#' model <- gbrs(mpg ~ wt + hp, data = train_data)
-#'
-#' # Predict on test data
-#' predictions <- predict(model, test_data)
-#'
-#' # Calculate RMSE
-#' rmse <- sqrt(mean((predictions - test_data$mpg)^2))
+#' fit <- gbrs(mpg ~ wt + hp, data = train_data, n_max = 30, n_quantiles = 5)
+#' rmse <- sqrt(mean((predict(fit, test_data) - test_data$mpg)^2))
+#' }
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{print.gbrs}}
 #' @export

@@ -104,7 +104,7 @@ print_model_score = function(scores, formula, prec = 1) {
 #' @return Invisibly returns the input object or the formatted string.
 #'
 #' @examples
-#' model <- gbrs(mpg ~ wt + hp, data = mtcars)
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
 #' print(model)          # Text output
 #' print(model, "latex") # LaTeX output
 #' print(model, "md")    # Markdown output
@@ -157,7 +157,7 @@ print.vertical <- function(x, ...) {
 #' @return Invisibly returns the LaTeX code as a character string.
 #'
 #' @examples
-#' model <- gbrs(mpg ~ wt + hp, data = mtcars)
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
 #' print(model, "latex", caption = "GBRS Risk Score")
 #'
 #' @export
@@ -243,7 +243,7 @@ print.latex <- function(x, caption = "GBRS Clinical Score", label = "tab:gbrs", 
 #' @return Invisibly returns the Markdown code as a character string.
 #'
 #' @examples
-#' model <- gbrs(mpg ~ wt + hp, data = mtcars)
+#' model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
 #' print(model, "md")
 #'
 #' @export

@@ -58,21 +58,24 @@ interpretable rule sets for regression, binary classification, or survival analy
 The model automatically selects split points and learns weights for each rule.
 }
 \examples{
-# Regression example
-model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 50, lr = 0.1)
-print(model)
+# Regression — small example kept under CRAN's 5-second budget
+model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, lr = 0.1, n_quantiles = 5)
 predictions <- predict(model, mtcars)
 
+\donttest{
 # Binary classification
 model_binary <- gbrs(am ~ mpg + wt + hp, data = mtcars,
-                     objective = "binary", n_max = 100)
+                     objective = "binary", n_max = 30, n_quantiles = 5)
 probs <- predict(model_binary, mtcars)
 
-# Survival analysis
-library(survival)
-model_surv <- gbrs(Surv(time, status) ~ age + sex + ph.ecog,
-                   data = lung, objective = "survival")
-risk_scores <- predict(model_surv, lung)
+# Survival analysis (requires the survival package)
+if (requireNamespace("survival", quietly = TRUE)) {
+  model_surv <- gbrs(survival::Surv(time, status) ~ age + sex + ph.ecog,
+                     data = survival::lung, objective = "survival",
+                     n_max = 30, n_quantiles = 5)
+  risk_scores <- predict(model_surv, survival::lung)
+}
+}
 
 }
 \seealso{

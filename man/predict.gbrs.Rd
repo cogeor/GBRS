@@ -29,18 +29,17 @@ the learned rule set. The type of prediction depends on the objective used
 during model fitting.
 }
 \examples{
-# Fit model on training data
-train_idx <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
+model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
+predictions <- predict(model, mtcars)
+
+\donttest{
+# More realistic workflow with a train/test split
+train_idx <- sample(seq_len(nrow(mtcars)), 0.7 * nrow(mtcars))
 train_data <- mtcars[train_idx, ]
 test_data <- mtcars[-train_idx, ]
-
-model <- gbrs(mpg ~ wt + hp, data = train_data)
-
-# Predict on test data
-predictions <- predict(model, test_data)
-
-# Calculate RMSE
-rmse <- sqrt(mean((predictions - test_data$mpg)^2))
+fit <- gbrs(mpg ~ wt + hp, data = train_data, n_max = 30, n_quantiles = 5)
+rmse <- sqrt(mean((predict(fit, test_data) - test_data$mpg)^2))
+}
 
 }
 \seealso{

@@ -18,7 +18,7 @@ Invisibly returns the Markdown code as a character string.
 S3 method to generate a Markdown table representation of the GBRS model score.
 }
 \examples{
-model <- gbrs(mpg ~ wt + hp, data = mtcars)
+model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 10, n_quantiles = 5)
 print(model, "md")
 
 }
