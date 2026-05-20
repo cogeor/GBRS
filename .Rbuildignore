@@ -23,6 +23,7 @@
 ^dist\.bak$
 ^Dockerfile$
 ^Dockerfile\.cran$
+^cran-comments\.md$
 ^check-output$
 ^docs$
 ^MANIFEST\.in$
