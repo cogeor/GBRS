@@ -50,15 +50,33 @@ jobs:
           flake8 python/ tests/
         shell: bash
 
-  docker:
+  cran-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Build Docker image
-        run: docker build -t gbrs .
+      - name: Build CRAN-check image
+        run: docker build -f Dockerfile.cran -t gbrs-cran-check .
 
-      - name: Run tests in Docker
-        run: docker run gbrs python3 -m pytest tests/ -v
+      - name: R CMD check --as-cran
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/check-output
+          docker run --rm -v $GITHUB_WORKSPACE/check-output:/work/check-output gbrs-cran-check
+
+      - name: Surface check log on failure
+        if: failure()
+        run: |
+          echo "=== 00check.log ==="
+          cat $GITHUB_WORKSPACE/check-output/gbrs.Rcheck/00check.log 2>/dev/null || echo "(no check.log)"
+          echo "=== 00install.out ==="
+          cat $GITHUB_WORKSPACE/check-output/gbrs.Rcheck/00install.out 2>/dev/null || echo "(no install.out)"
+
+      - name: Upload check artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cran-check-output
+          path: check-output/
+          if-no-files-found: ignore
