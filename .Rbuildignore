@@ -16,6 +16,8 @@
 ^\.dockerignore$
 ^\.flake8$
 ^\.pre-commit-config\.yaml$
+^\.env$
+^\.env\.example$
 ^build$
 ^dist$
 ^dist\.bak$
@@ -40,4 +42,4 @@
 ^README\.md$
 ^LICENSE\.md$
 ^gbrs_.*\.tar\.gz$
-^third_party/eigen/(?!Eigen|unsupported)
+^third_party$
