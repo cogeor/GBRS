@@ -99,12 +99,12 @@ public:
   VectorXd w2;
   Model(int nrow, int ncol, int max_n, double lr, int n_pts, int batch_size,
         unsigned int seed = 0)
-      : max_n(max_n), iter_out(MatrixXd(nrow, 4)), mask(VectorXd(nrow)),
-        l_arr(VectorXd(n_pts)), gmat(MatrixXd(n_pts, 2)), lr(lr),
-        batch_size(batch_size), idxs(VectorXd::Zero(max_n)),
-        split_val(VectorXd::Zero(max_n)), w1(VectorXd::Zero(max_n)),
-        w2(VectorXd::Zero(max_n)), i(0), params({0.0, VectorXd::Zero(max_n)}),
-        rng_(seed) {}
+      : max_n(max_n), lr(lr), batch_size(batch_size), i(0),
+        idxs(VectorXd::Zero(max_n)), split_val(VectorXd::Zero(max_n)),
+        iter_out(MatrixXd(nrow, 4)), mask(VectorXd(nrow)),
+        l_arr(VectorXd(n_pts)), gmat(MatrixXd(n_pts, 2)), rng_(seed),
+        params({0.0, VectorXd::Zero(max_n)}), w1(VectorXd::Zero(max_n)),
+        w2(VectorXd::Zero(max_n)) {}
   VectorXd predict(const MatrixXd &x) const;
   VectorXd predict_proba(const MatrixXd &x) const;
   void fit(const MatrixXd &m, const VectorXd &y,
