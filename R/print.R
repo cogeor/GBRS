@@ -1,5 +1,5 @@
 
-#' @importFrom stats as.formula terms
+#' @importFrom stats as.formula terms model.frame model.matrix model.response quantile sd
 NULL
 
 get.score.breaks = function(scores, idx, prec=1) {
@@ -296,6 +296,9 @@ print.md <- function(x, ...) {
 
 #' Print GBRS Model as Horizontal LaTeX Table
 #'
+#' @param x An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param ... Additional arguments (currently unused).
+#'
 #' @export
 print.latex.horizontal <- function(x, ...) {
     scores <- x$weights
@@ -357,6 +360,9 @@ print.latex.horizontal <- function(x, ...) {
 
 #' Print GBRS Model as Horizontal Markdown Table
 #'
+#' @param x An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param ... Additional arguments (currently unused).
+#'
 #' @export
 print.md.horizontal <- function(x, ...) {
     scores <- x$weights
@@ -409,6 +415,9 @@ print.md.horizontal <- function(x, ...) {
 }
 
 #' Print GBRS Model as Horizontal ASCII Table
+#'
+#' @param x An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param ... Additional arguments (currently unused).
 #'
 #' @export
 print.ascii.horizontal <- function(x, ...) {

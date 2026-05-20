@@ -4,10 +4,12 @@
 \alias{summary.gbrs_bootstrap}
 \title{Get Bootstrap Weight Statistics}
 \usage{
-\method{summary}{gbrs_bootstrap}(x, ...)
+\method{summary}{gbrs_bootstrap}(object, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"gbrs_bootstrap"}.}
+\item{object}{An object of class \code{"gbrs_bootstrap"} returned by \code{\link{gbrs_bootstrap}}.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 A data frame with columns: feature, threshold, mean, std

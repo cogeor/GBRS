@@ -4,13 +4,15 @@
 \alias{predict.gbrs}
 \title{Predict Method for GBRS Models}
 \usage{
-\method{predict}{gbrs}(obj, newdata)
+\method{predict}{gbrs}(object, newdata, ...)
 }
 \arguments{
-\item{obj}{An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.}
+\item{object}{An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.}
 
 \item{newdata}{A data frame containing the same predictor variables as used in
 model fitting. Must include all variables specified in the model formula.}
+
+\item{...}{Currently unused; present for S3 generic consistency.}
 }
 \value{
 A numeric vector of predictions with length equal to \code{nrow(newdata)}:

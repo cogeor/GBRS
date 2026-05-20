@@ -6,6 +6,11 @@
 \usage{
 \method{print}{md.horizontal}(x, ...)
 }
+\arguments{
+\item{x}{An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.}
+
+\item{...}{Additional arguments (currently unused).}
+}
 \description{
 Print GBRS Model as Horizontal Markdown Table
 }

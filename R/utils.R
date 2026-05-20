@@ -398,15 +398,16 @@ print.gbrs_bootstrap <- function(x, prec = 3, ...) {
 #' @description
 #' Extract mean and standard deviation for each weight from bootstrap results.
 #'
-#' @param x An object of class \code{"gbrs_bootstrap"}.
+#' @param object An object of class \code{"gbrs_bootstrap"} returned by \code{\link{gbrs_bootstrap}}.
+#' @param ... Additional arguments (currently unused).
 #'
 #' @return A data frame with columns: feature, threshold, mean, std
 #'
 #' @export
-summary.gbrs_bootstrap <- function(x, ...) {
+summary.gbrs_bootstrap <- function(object, ...) {
   # Collect all unique (idx, split_val) pairs
   all_keys <- list()
-  for (result in x$results) {
+  for (result in object$results) {
     for (i in 1:nrow(result)) {
       key <- paste(result$idx[i], result$split_val[i], sep = "_")
       if (!key %in% names(all_keys)) {
@@ -419,7 +420,7 @@ summary.gbrs_bootstrap <- function(x, ...) {
   # Add zeros for missing
   for (key in names(all_keys)) {
     n_present <- length(all_keys[[key]]$weights)
-    n_missing <- x$n_bootstrap - n_present
+    n_missing <- object$n_bootstrap - n_present
     if (n_missing > 0) {
       all_keys[[key]]$weights <- c(all_keys[[key]]$weights, rep(0, n_missing))
     }
@@ -435,8 +436,8 @@ summary.gbrs_bootstrap <- function(x, ...) {
   )
 
   # Add feature names
-  df$feature_name <- if (!is.null(x$feature_names)) {
-    x$feature_names[df$feature_idx + 1]
+  df$feature_name <- if (!is.null(object$feature_names)) {
+    object$feature_names[df$feature_idx + 1]
   } else {
     paste0("F", df$feature_idx)
   }
@@ -452,7 +453,8 @@ summary.gbrs_bootstrap <- function(x, ...) {
 #' the learned rule set. The type of prediction depends on the objective used
 #' during model fitting.
 #'
-#' @param obj An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param object An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.
+#' @param ... Currently unused; present for S3 generic consistency.
 #' @param newdata A data frame containing the same predictor variables as used in
 #'   model fitting. Must include all variables specified in the model formula.
 #'
@@ -480,13 +482,13 @@ summary.gbrs_bootstrap <- function(x, ...) {
 #'
 #' @seealso \code{\link{gbrs}}, \code{\link{print.gbrs}}
 #' @export
-predict.gbrs <- function(obj, newdata) {
-  data <- process.formula(obj$formula, newdata)
+predict.gbrs <- function(object, newdata, ...) {
+  data <- process.formula(object$formula, newdata)
 
-  pred <- switch(obj$objective,
-    "continuous" = predict_score(obj$weights, data$x),
-    "binary"     = predict_score_proba(obj$weights, data$x),
-    "survival"   = predict_score(obj$weights, data$x),  # Returns log-risk scores
+  pred <- switch(object$objective,
+    "continuous" = predict_score(object$weights, data$x),
+    "binary"     = predict_score_proba(object$weights, data$x),
+    "survival"   = predict_score(object$weights, data$x),  # Returns log-risk scores
     stop("Unknown objective: must be 'continuous', 'binary', or 'survival'")
   )
 
