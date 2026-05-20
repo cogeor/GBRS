@@ -16,4 +16,7 @@ LinkingTo:
     Rcpp, RcppEigen
 Imports:
     Rcpp
+Suggests:
+    jsonlite,
+    survival
 Config/roxygen2/version: 8.0.0

@@ -1,3 +1,10 @@
+for (pkg in c("survival")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cat(sprintf("skipped: %s not installed\n", pkg))
+    quit(save = "no", status = 0)
+  }
+}
+
 library(gbrs)
 library(survival)
 

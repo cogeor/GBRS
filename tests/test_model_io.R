@@ -1,5 +1,12 @@
 # Test model import/export functionality for R
 
+for (pkg in c("jsonlite")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cat(sprintf("skipped: %s not installed\n", pkg))
+    quit(save = "no", status = 0)
+  }
+}
+
 library(gbrs)
 
 test_r_save_load <- function() {

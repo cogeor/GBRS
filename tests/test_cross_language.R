@@ -3,6 +3,25 @@
 # This script loads test data and model from Python,
 # generates predictions in R, and saves them for comparison.
 
+for (pkg in c("jsonlite")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cat(sprintf("skipped: %s not installed\n", pkg))
+    quit(save = "no", status = 0)
+  }
+}
+
+# Cross-language fixtures are produced by the Python side and aren't
+# shipped in the R source tarball; skip cleanly when missing so the
+# test still no-ops under R CMD check.
+data_file <- file.path("tests", "data", "test_data.json")
+if (!file.exists(data_file)) {
+  data_file <- file.path("data", "test_data.json")  # when CWD is tests/
+}
+if (!file.exists(data_file)) {
+  cat("skipped: cross-language fixture tests/data/test_data.json not found\n")
+  quit(save = "no", status = 0)
+}
+
 library(gbrs)
 library(jsonlite)
 
@@ -10,15 +29,11 @@ test_cross_language_r_part <- function() {
   cat("=" , rep("=", 59), "\n", sep="")
   cat("Cross-Language Prediction Comparison Test (R Part)\n")
   cat("=", rep("=", 59), "\n", sep="")
-  
-  # Load test data from Python
+
+  # Load test data from Python (path resolved by guard above)
   cat("\n1. Loading test data from Python...\n")
-  data_dir <- file.path("tests", "data")
-  if (!dir.exists(data_dir)) {
-    dir.create(data_dir, recursive = TRUE)
-  }
-  
-  test_data <- read_json(file.path(data_dir, "test_data.json"), simplifyVector = TRUE)
+
+  test_data <- read_json(data_file, simplifyVector = TRUE)
   X <- test_data$X
   y <- test_data$y
   cat(sprintf("   Dataset: %d samples, %d features\n", nrow(X), ncol(X)))

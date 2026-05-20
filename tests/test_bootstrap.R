@@ -54,7 +54,7 @@ test_bootstrap_basic <- function() {
   result3 <- gbrs_bootstrap(y ~ x1 + x2, data = df, n_bootstrap = 3, 
                             n_max = 20, seed = 456)
   y0_3 <- sapply(result3$results, function(r) r$cst[1])
-  stopifnot(!all.equal(y0_1, y0_3) || !is.logical(all.equal(y0_1, y0_3)))
+  stopifnot(!isTRUE(all.equal(y0_1, y0_3)))
   cat("   [OK] Different seeds produce different results\n")
   
   cat("\n=== All R bootstrap tests passed! ===\n\n")

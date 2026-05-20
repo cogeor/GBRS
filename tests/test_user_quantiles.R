@@ -1,3 +1,10 @@
+for (pkg in c("survival")) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cat(sprintf("skipped: %s not installed\n", pkg))
+    quit(save = "no", status = 0)
+  }
+}
+
 library(gbrs)
 library(survival)
 
@@ -62,9 +69,10 @@ if (length(found_splits) > 0) {
 cat("\n=== Standard Print (Horizontal) ===\n")
 print(model)
 
-# Test legacy vertical print
+# Test legacy vertical print (use format= rather than calling the S3
+# method by name, since print.vertical is not exported for direct use)
 cat("\n=== Legacy Vertical Print ===\n")
-print.vertical(model)
+print(model, format = "text")
 
 # Test LaTeX print (vertical)
 cat("\n=== LaTeX Print (Vertical) ===\n")
