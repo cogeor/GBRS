@@ -63,6 +63,23 @@ Installs as `gbrs-clinical` on PyPI; the import name is still `gbrs`.
     install.packages("gbrs")
     ```
 
+#### Maximum performance
+
+The CRAN-shipped binary is built with portable flags (`-O2`, baseline
+ISA). For maximum throughput on your own machine, install from source
+after adding the following to `~/.R/Makevars` (create the file if it
+does not exist):
+
+```
+CXX17FLAGS = -O3 -march=native
+```
+
+Then `install.packages("gbrs", type = "source")` will compile with
+CPU-specific vectorisation. Build on a representative host —
+`-march=native` pins the binary to the build machine's
+microarchitecture, so the resulting `.so` may crash with
+`SIGILL` on older CPUs.
+
 ## Usage
 
 ### Python

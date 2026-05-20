@@ -1,0 +1,9 @@
+# Template processed by ../configure (POSIX) into src/Makevars at
+# install time. @OPENMP_CXXFLAGS@ is replaced with the detected
+# OpenMP flag (typically $(SHLIB_OPENMP_CXXFLAGS) or empty).
+# WRE §1.6 forbids `+=` and §1.2.1.1 forbids overriding CXXFLAGS,
+# which is why the @...@ substitution pattern is used.
+
+PKG_CPPFLAGS = -I../inst/include
+PKG_CXXFLAGS = @OPENMP_CXXFLAGS@
+PKG_LIBS     = @OPENMP_CXXFLAGS@

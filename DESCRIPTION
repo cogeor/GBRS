@@ -8,6 +8,7 @@ Description: Fits interpretable risk scores via gradient boosting for
     formula interface, bootstrap confidence intervals, and serialization to
     a portable JSON format that can be re-loaded from Python.
 License: MIT + file LICENSE
+SystemRequirements: C++17, GNU make
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 URL: https://github.com/cogeor/GBRS

@@ -1,0 +1,62 @@
+#!/usr/bin/env sh
+# gbrs configure script.
+# Probes for OpenMP support and writes src/Makevars from
+# src/Makevars.in by substituting @OPENMP_CXXFLAGS@.
+# Modelled on data.table's configure (lines 67-159).
+
+: "${R_HOME:?R_HOME is not set; this script is meant to be run by R CMD INSTALL}"
+
+RBIN="${R_HOME}/bin/R"
+RSCRIPT="${R_HOME}/bin/Rscript"
+
+# Small C++ snippet that uses an OpenMP pragma. Compiles and links
+# iff the chosen CXXFLAGS enable OpenMP. We do not execute it; a
+# successful link is sufficient evidence the flag works.
+cat > test-omp.cpp <<'EOF'
+#include <omp.h>
+int main(void) {
+    int n = 0;
+    #pragma omp parallel reduction(+:n)
+    n += 1;
+    return n == 0;
+}
+EOF
+
+test_openmp_flag () {
+    flag="$1"
+    printf '* checking if OpenMP works with CXXFLAGS="%s"... ' "${flag}"
+    # Use R CMD SHLIB so we pick up R's compiler choice. --preclean
+    # removes any prior object file from a previous probe.
+    if PKG_CXXFLAGS="${flag}" PKG_LIBS="${flag}" \
+         "${RBIN}" CMD SHLIB --preclean --clean test-omp.cpp \
+         >> config.log 2>&1; then
+        echo "yes"
+        OPENMP_CXXFLAGS="${flag}"
+        return 0
+    fi
+    echo "no"
+    return 1
+}
+
+: > config.log
+OPENMP_CXXFLAGS=""
+
+# Try in order: R's own macro (works on Linux/macOS-with-libomp),
+# bare -fopenmp (Linux GCC fallback), then give up.
+test_openmp_flag '$(SHLIB_OPENMP_CXXFLAGS)' \
+    || test_openmp_flag '-fopenmp' \
+    || {
+        echo "*** OpenMP could not be detected."
+        echo "*** Compilation will be attempted without parallel pragmas;"
+        echo "*** if the package source uses #include <omp.h> unconditionally"
+        echo "*** the build will fail. On macOS see https://mac.r-project.org/openmp/"
+        echo "*** for instructions to install libomp."
+    }
+
+rm -f test-omp.cpp test-omp.o test-omp.so test-omp.dll test-omp.dylib a.out
+
+echo "* writing src/Makevars with OPENMP_CXXFLAGS='${OPENMP_CXXFLAGS}'"
+sed -e "s|@OPENMP_CXXFLAGS@|${OPENMP_CXXFLAGS}|g" \
+    src/Makevars.in > src/Makevars
+
+exit 0

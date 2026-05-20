@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+# gbrs configure.win — copy the Windows Makevars template into place.
+# Rtools ships OpenMP so no probing is required.
+cp src/Makevars.win.in src/Makevars.win

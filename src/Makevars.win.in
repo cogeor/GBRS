@@ -1,0 +1,8 @@
+# Template copied by ../configure.win into src/Makevars.win at
+# install time. Rtools ships an OpenMP-enabled toolchain so we use
+# the R-supplied $(SHLIB_OPENMP_CXXFLAGS) macro directly without
+# probing.
+
+PKG_CPPFLAGS = -I../inst/include
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS     = $(SHLIB_OPENMP_CXXFLAGS)

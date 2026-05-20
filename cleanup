@@ -1,0 +1,3 @@
+#!/bin/sh
+# Remove configure-generated files so R CMD build never tarballs them.
+rm -f src/Makevars src/Makevars.win
