@@ -2,22 +2,26 @@
 % Please edit documentation in R/package.R
 \docType{package}
 \name{gbrs-package}
-\alias{gbrs}
 \alias{gbrs-package}
 \title{gbrs: Gradient Boosted Risk Scores}
 \description{
-GBRS (gradient boosted risk scoring) is a library that generates risk scores.
+Fits interpretable risk scores via gradient boosting for regression, binary classification, and survival outcomes. Provides a formula interface, bootstrap confidence intervals, and serialization to a portable JSON format that can be re-loaded from Python.
 }
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/costa/gbrs}
-  \item Report bugs at \url{https://github.com/costa/gbrs/issues}
+  \item \url{https://github.com/cogeor/GBRS}
+  \item Report bugs at \url{https://github.com/cogeor/GBRS/issues}
 }
 
 }
 \author{
-\strong{Maintainer}: Costa Georgantas \email{costa@example.com}
+\strong{Maintainer}: Costa Georgantas \email{costa.georgantas@chuv.ch}
+
+Authors:
+\itemize{
+  \item Costa Georgantas \email{costa.georgantas@chuv.ch}
+}
 
 }
 \keyword{internal}

@@ -6,7 +6,7 @@
 \usage{
 gbrs(
   formula,
-  df,
+  data,
   n_max = 100,
   lr = 0.1,
   n_quantiles = 10,
@@ -20,7 +20,7 @@ gbrs(
 use standard R formula syntax (e.g., \code{y ~ x1 + x2}). For survival analysis,
 use \code{Surv(time, event) ~ predictors} from the survival package.}
 
-\item{df}{A data frame containing the variables specified in the formula.}
+\item{data}{A data frame containing the variables specified in the formula.}
 
 \item{n_max}{Integer. Maximum number of boosting iterations (default: 100).
 More iterations can improve fit but may lead to overfitting.}
@@ -58,7 +58,6 @@ interpretable rule sets for regression, binary classification, or survival analy
 The model automatically selects split points and learns weights for each rule.
 }
 \examples{
-\dontrun{
 # Regression example
 model <- gbrs(mpg ~ wt + hp, data = mtcars, n_max = 50, lr = 0.1)
 print(model)
@@ -74,7 +73,6 @@ library(survival)
 model_surv <- gbrs(Surv(time, status) ~ age + sex + ph.ecog,
                    data = lung, objective = "survival")
 risk_scores <- predict(model_surv, lung)
-}
 
 }
 \seealso{

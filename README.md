@@ -1,8 +1,8 @@
 # GBRS: Gradient Boosted Risk Scoring
 
-[![pipeline status](https://gitlab.com/cgeo/GBRS/badges/dev/pipeline.svg)](https://gitlab.com/cgeo/GBRS/-/commits/dev)
-![Python](https://img.shields.io/badge/python-3.7%2B-blue)
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![R](https://img.shields.io/badge/R-4.0%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 Risk scores are an interpretable, explainable, and actionable class of machine learning models used in clinical settings, insurance, and risk management. Unlike most computational methods, risk scores are designed to be computed by a human by attributing points to a data sample based on a limited set of criteria.
 
@@ -28,19 +28,22 @@ This library provides an algorithm based on gradient boosting for generating ris
 
 ### Python Package
 
-1.  Clone the repository with submodules:
+Installs as `gbrs-clinical` on PyPI; the import name is still `gbrs`.
+
+1.  From source (current path; PyPI publication pending):
     ```bash
-    git clone --recursive https://gitlab.com/cgeo/GBRS.git
+    git clone --recursive https://github.com/cogeor/GBRS.git
     cd GBRS
+    pip install .
     ```
-    If you already cloned without `--recursive`, run:
+    If you cloned without `--recursive`:
     ```bash
     git submodule update --init --recursive
     ```
 
-2.  Install using pip:
+2.  Once available on PyPI:
     ```bash
-    pip install .
+    pip install gbrs-clinical
     ```
 
 ### R Package
@@ -50,9 +53,14 @@ This library provides an algorithm based on gradient boosting for generating ris
     install.packages(c("Rcpp", "RcppEigen"))
     ```
 
-2.  Install from source:
+2.  Install from source (Rtools required on Windows):
     ```bash
     R CMD INSTALL .
+    ```
+
+    Once accepted on CRAN:
+    ```R
+    install.packages("gbrs")
     ```
 
 ## Usage

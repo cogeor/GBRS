@@ -4,16 +4,16 @@
 \alias{predict.gbrs}
 \title{Predict Method for GBRS Models}
 \usage{
-\method{predict}{gbrs}(obj, df)
+\method{predict}{gbrs}(obj, newdata)
 }
 \arguments{
 \item{obj}{An object of class \code{"gbrs"} returned by \code{\link{gbrs}}.}
 
-\item{df}{A data frame containing the same predictor variables as used in
+\item{newdata}{A data frame containing the same predictor variables as used in
 model fitting. Must include all variables specified in the model formula.}
 }
 \value{
-A numeric vector of predictions with length equal to \code{nrow(df)}:
+A numeric vector of predictions with length equal to \code{nrow(newdata)}:
 \itemize{
 \item For \code{objective = "continuous"}: Predicted continuous values
 \item For \code{objective = "binary"}: Predicted probabilities (0 to 1)
@@ -27,7 +27,6 @@ the learned rule set. The type of prediction depends on the objective used
 during model fitting.
 }
 \examples{
-\dontrun{
 # Fit model on training data
 train_idx <- sample(1:nrow(mtcars), 0.7 * nrow(mtcars))
 train_data <- mtcars[train_idx, ]
@@ -40,7 +39,6 @@ predictions <- predict(model, test_data)
 
 # Calculate RMSE
 rmse <- sqrt(mean((predictions - test_data$mpg)^2))
-}
 
 }
 \seealso{

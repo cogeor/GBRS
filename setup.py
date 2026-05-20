@@ -31,8 +31,6 @@ ext_modules = [
 ]
 
 setup(
-    name="gbrs",
-    version="0.1.0",
     packages=["gbrs"],
     package_dir={"": "python"},
     ext_modules=ext_modules,
