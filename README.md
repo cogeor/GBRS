@@ -3,10 +3,11 @@
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![R](https://img.shields.io/badge/R-4.0%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+[![arXiv](https://img.shields.io/badge/arXiv-2605.02593-b31b1b.svg)](https://arxiv.org/abs/2605.02593)
 
 Risk scores are an interpretable, explainable, and actionable class of machine learning models used in clinical settings, insurance, and risk management. Unlike most computational methods, risk scores are designed to be computed by a human by attributing points to a data sample based on a limited set of criteria.
 
-This library provides an algorithm based on gradient boosting for generating risk scores, along with a C++ implementation with Python and R bindings.
+This library provides an algorithm based on gradient boosting for generating risk scores, along with a C++ implementation with Python and R bindings. The method is described in [Georgantas and Richiardi (2026)](https://arxiv.org/abs/2605.02593), where it is benchmarked against AutoScore across twelve tabular datasets spanning regression, classification, and time-to-event tasks — producing 60% fewer rules for classification and 16% fewer for time-to-event problems, on average, at competitive predictive performance.
 
 
 ## Features
@@ -193,3 +194,26 @@ GBRS models are printed in a horizontal format where thresholds are displayed ab
 | | 3.0 | 2.0 | 0.0 |
 | **prior** | <5.0 | >=5.0 | |
 | | 1.0 | 1.5 | |
+
+## Citation
+
+If you use GBRS in academic work, please cite:
+
+> Georgantas, C., & Richiardi, J. (2026). *Gradient Boosted Risk Scores.* arXiv:2605.02593. https://arxiv.org/abs/2605.02593
+
+BibTeX:
+
+```bibtex
+@article{georgantas2026gbrs,
+  title  = {Gradient Boosted Risk Scores},
+  author = {Georgantas, Costa and Richiardi, Jonas},
+  year   = {2026},
+  eprint = {2605.02593},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  doi    = {10.48550/arXiv.2605.02593},
+  url    = {https://arxiv.org/abs/2605.02593}
+}
+```
+
+In R, `citation("gbrs")` returns the same reference programmatically.

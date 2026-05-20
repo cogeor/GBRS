@@ -3,10 +3,12 @@ Title: Gradient Boosted Risk Scores
 Version: 0.1.0
 Authors@R:
     person("Costa", "Georgantas", email = "costa.georgantas@chuv.ch", role = c("aut", "cre"))
-Description: Fits interpretable risk scores via gradient boosting for
-    regression, binary classification, and survival outcomes. Provides a
-    formula interface, bootstrap confidence intervals, and serialization to
-    a portable JSON format that can be re-loaded from Python.
+Description: Fits interpretable points-based risk scores via gradient
+    boosting for regression, binary classification, and survival outcomes,
+    following the method of Georgantas and Richiardi (2026)
+    <doi:10.48550/arXiv.2605.02593>. Provides a formula interface, bootstrap
+    confidence intervals, and serialization to a portable JSON format that
+    can be re-loaded from the companion Python package.
 License: MIT + file LICENSE
 SystemRequirements: C++17, GNU make
 Encoding: UTF-8

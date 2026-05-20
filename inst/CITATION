@@ -1,0 +1,12 @@
+bibentry(
+  bibtype = "Article",
+  title   = "Gradient Boosted Risk Scores",
+  author  = c(person("Costa", "Georgantas"),
+              person("Jonas", "Richiardi")),
+  year    = 2026,
+  journal = "arXiv preprint",
+  number  = "2605.02593",
+  doi     = "10.48550/arXiv.2605.02593",
+  url     = "https://arxiv.org/abs/2605.02593",
+  header  = "To cite gbrs in publications, please use:"
+)
