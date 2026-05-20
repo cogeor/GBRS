@@ -3,7 +3,12 @@
 #include <algorithm>
 #include <map>
 #include <numeric>
+#ifdef _OPENMP
 #include <omp.h>
+#else
+inline int omp_get_max_threads() { return 1; }
+inline int omp_get_thread_num() { return 0; }
+#endif
 #include <random>
 #include <tuple>
 #include <unordered_map>
