@@ -28,23 +28,31 @@ This library provides an algorithm based on gradient boosting for generating ris
 
 ### Python Package
 
-Installs as `gbrs-clinical` on PyPI; the import name is still `gbrs`.
+Installs as `pygbrs` on PyPI; the import name is still `gbrs`:
 
-1.  From source (current path; PyPI publication pending):
-    ```bash
-    git clone --recursive https://github.com/cogeor/GBRS.git
-    cd GBRS
-    pip install .
-    ```
-    If you cloned without `--recursive`:
-    ```bash
-    git submodule update --init --recursive
-    ```
+```bash
+pip install pygbrs
+```
 
-2.  Once available on PyPI:
-    ```bash
-    pip install gbrs-clinical
-    ```
+```python
+import gbrs
+```
+
+For v0.1.0 only an sdist is published — `pip` will compile the C++ core
+on your machine using your local toolchain. That keeps the first release
+narrow in scope; binary wheels via `cibuildwheel` are tracked for a later
+version. Build prerequisites: a C++17 compiler and Python headers
+(`python-dev` / `python3-devel` on Linux).
+
+To build from a clone instead:
+
+```bash
+git clone --recursive https://github.com/cogeor/GBRS.git
+cd GBRS
+pip install .
+```
+
+If you cloned without `--recursive`, run `git submodule update --init --recursive` first.
 
 ### R Package
 

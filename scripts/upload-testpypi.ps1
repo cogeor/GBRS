@@ -1,4 +1,5 @@
-# Load .env into the current process, then upload dist/* to TestPyPI.
+# Load .env into the current process, then upload dist/* to a PyPI server.
+# The repository (TestPyPI or real PyPI) is controlled by TWINE_REPOSITORY_URL in .env.
 # Usage from repo root:  .\scripts\upload-testpypi.ps1
 #
 # .env must contain TWINE_USERNAME, TWINE_PASSWORD, TWINE_REPOSITORY_URL.

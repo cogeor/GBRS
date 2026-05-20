@@ -8,7 +8,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gbrs-clinical"
+name = "pygbrs"
 dynamic = ["version"]
 description = "Gradient Boosted Risk Scores (GBRS) - A library for generating risk scores"
 readme = "README.md"
