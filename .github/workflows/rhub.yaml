@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       config:
-        description: 'Comma-separated R-hub platforms (e.g. linux,windows,macos,macos-arm64,ubuntu-release)'
+        description: 'Comma-separated R-hub platforms (e.g. linux,windows,macos-arm64,ubuntu-release). Note: macos (Intel/x86_64) maps to macos-13 which GitHub deprecated Dec 2025 and now hangs the queue forever.'
         type: string
-        default: 'linux,windows,macos,macos-arm64'
+        default: 'linux,windows,macos-arm64'
       name:
         description: 'Optional run name'
         type: string
